@@ -1,13 +1,29 @@
+@inject IStandingsService StandingsService
+
 <MudPaper Elevation="1" Class="pa-4 standings-card">
     <MudStack Spacing="2">
         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
             <MudText Typo="Typo.h5" Class="font-weight-semibold">Standings</MudText>
-            <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh" Disabled="true">
-                Refresh
-            </MudButton>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                @if (_isLoading)
+                {
+                    <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="mr-2" />
+                }
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh"
+                           Disabled="_isLoading" OnClick="RefreshAsync">
+                    Refresh
+                </MudButton>
+            </MudStack>
         </MudStack>
 
-        <MudTable Items="_demoRows" Hover="true" Dense="true" Class="standings-table">
+        @if (!string.IsNullOrWhiteSpace(_errorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true">
+                @_errorMessage
+            </MudAlert>
+        }
+
+        <MudTable Items="_rows" Hover="true" Dense="true" Class="standings-table" Loading="_isLoading">
             <HeaderContent>
                 <MudTh>#</MudTh>
                 <MudTh>Player</MudTh>
@@ -31,7 +47,7 @@
                 <MudTd DataLabel="Wins" Class="text-center">@context.Wins</MudTd>
                 <MudTd DataLabel="Losses" Class="text-center">@context.Losses</MudTd>
                 <MudTd DataLabel="Win %" Class="text-center">@context.WinPercentage.ToString("P0")</MudTd>
-                <MudTd DataLabel="Rating" Class="text-center">@context.Rating</MudTd>
+                <MudTd DataLabel="Rating" Class="text-center">@context.Rating.ToString("F0")</MudTd>
             </RowTemplate>
             <NoRecordsContent>
                 <MudText Typo="Typo.body2" Class="ma-4" Color="Color.Secondary">
@@ -41,28 +57,103 @@
         </MudTable>
 
         <MudAlert Severity="Severity.Info" Dense="true" Variant="Variant.Text">
-            Head-to-head drawer and opponent breakdown will appear here once backend wiring is ready.
+            Head-to-head breakdowns and live refresh will appear here as those features land.
         </MudAlert>
     </MudStack>
 </MudPaper>
 
 @code {
-    private readonly IReadOnlyList<StandingsRowDemo> _demoRows =
-    [
-        new StandingsRowDemo(1, "Alice", "AL", 18, 14, 4, 0.78, 1034),
-        new StandingsRowDemo(2, "Bob", "BO", 16, 11, 5, 0.69, 1012),
-        new StandingsRowDemo(3, "Charlie", "CH", 12, 7, 5, 0.58, 998),
-        new StandingsRowDemo(4, "Diana", "DI", 10, 5, 5, 0.50, 990),
-        new StandingsRowDemo(5, "Evelyn", "EV", 8, 3, 5, 0.38, 970)
-    ];
+    private readonly List<StandingsRowViewModel> _rows = new();
+    private bool _isLoading;
+    private string? _errorMessage;
 
-    private sealed record StandingsRowDemo(
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task RefreshAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        if (_isLoading)
+        {
+            return;
+        }
+
+        _errorMessage = null;
+        _isLoading = true;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            var standings = await StandingsService.GetStandingsAsync();
+            var updatedRows = standings
+                .Select((row, index) => new StandingsRowViewModel(
+                    index + 1,
+                    row.PlayerId,
+                    row.PlayerName,
+                    BuildInitials(row.PlayerName),
+                    row.MatchesPlayed,
+                    row.Wins,
+                    row.Losses,
+                    row.WinPercentage,
+                    row.CurrentRating))
+                .ToList();
+
+            _rows.Clear();
+            _rows.AddRange(updatedRows);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to load standings: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private static string BuildInitials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return "?";
+        }
+
+        var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length == 0)
+        {
+            return "?";
+        }
+
+        if (parts.Length == 1)
+        {
+            var segment = parts[0];
+            return segment.Length switch
+            {
+                0 => "?",
+                1 => segment.ToUpperInvariant(),
+                _ => string.Concat(char.ToUpperInvariant(segment[0]), char.ToUpperInvariant(segment[1]))
+            };
+        }
+
+        var initials = string.Concat(parts.Take(2).Select(p => char.ToUpperInvariant(p[0])));
+        return initials.Length == 0 ? "?" : initials;
+    }
+
+    private sealed record StandingsRowViewModel(
         int Position,
+        Guid PlayerId,
         string Name,
         string Initials,
         int MatchesPlayed,
         int Wins,
         int Losses,
         double WinPercentage,
-        int Rating);
+        double Rating);
 }

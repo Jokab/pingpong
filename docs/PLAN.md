@@ -8,6 +8,8 @@ Build a lightweight ping pong results tracker that encourages quick match entry,
 ## Current Vertical Slice Target
 Deliver a minimal end-to-end experience for submitting a match via the public API and persisting it in SQLite.
 
+**Status:** _Completed (integration-tested match submission API writing to SQLite)_
+
 ### Scope of the Slice
 1. **Match submission API**
    - Define a request DTO that includes player identifiers/names, per-set scores, and match date.

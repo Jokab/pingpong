@@ -28,6 +28,15 @@ app.UseHttpsRedirection();
 
 app.UseAntiforgery();
 
+// Apply migrations automatically in development to keep local DB up-to-date
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<PingPong.Infrastructure.Persistence.PingPongDbContext>();
+    // EnsureCreated for now; will move to Migrate after adding Microsoft.EntityFrameworkCore.Design reference at runtime app if needed
+    db.Database.EnsureCreated();
+}
+
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
