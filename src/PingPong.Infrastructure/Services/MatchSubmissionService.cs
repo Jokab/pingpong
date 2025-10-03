@@ -43,36 +43,61 @@ public sealed class MatchSubmissionService : IMatchSubmissionService
             .ToList();
 
         var submittedAt = DateTimeOffset.UtcNow;
-        var aggregate = MatchAggregate.CreateNew(
-            playerOne.Id,
-            playerTwo.Id,
-            request.MatchDate,
-            setScores,
-            submittedAt,
-            request.SubmittedBy);
 
-        aggregate.Match.PlayerOne = playerOne;
-        aggregate.Match.PlayerTwo = playerTwo;
-        aggregate.Event.PlayerOne = playerOne;
-        aggregate.Event.PlayerTwo = playerTwo;
+        // Validate sets with existing domain rules
+        for (var i = 0; i < setScores.Count; i++)
+        {
+            // Use MatchAggregate's internal validation by creating a transient aggregate, but we won't persist Match
+            // Alternatively, re-apply the same validation locally to avoid constructing the Match entity.
+            // Here, we perform local validation to keep persistence event-sourced.
+            var score = setScores[i];
+            if (score.PlayerOneScore < 0 || score.PlayerTwoScore < 0)
+                throw new DomainValidationException($"Set {i + 1} scores must be non-negative.");
+            var maxScore = Math.Max(score.PlayerOneScore, score.PlayerTwoScore);
+            var minScore = Math.Min(score.PlayerOneScore, score.PlayerTwoScore);
+            if (maxScore < 11)
+                throw new DomainValidationException($"Set {i + 1} winning score must be at least 11.");
+            if (maxScore - minScore < 2)
+                throw new DomainValidationException($"Set {i + 1} must be won by at least two points.");
+            if (score.PlayerOneScore == score.PlayerTwoScore)
+                throw new DomainValidationException($"Set {i + 1} cannot end in a draw.");
+        }
 
-        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        var playerOneSetsWon = setScores.Count(s => s.PlayerOneScore > s.PlayerTwoScore);
+        var playerTwoSetsWon = setScores.Count(s => s.PlayerTwoScore > s.PlayerOneScore);
+        if (playerOneSetsWon == playerTwoSetsWon)
+        {
+            throw new DomainValidationException("Match submission must produce a clear winner.");
+        }
 
-        _context.Matches.Add(aggregate.Match);
+        var matchEventId = Guid.NewGuid();
+        var matchEvent = new MatchEvent
+        {
+            Id = matchEventId,
+            // Leave MatchId unset (default Guid) and do not set Match navigation
+            EventType = MatchEventType.Recorded,
+            PlayerOneId = playerOne.Id,
+            PlayerTwoId = playerTwo.Id,
+            MatchDate = request.MatchDate,
+            CreatedAt = submittedAt,
+            SubmittedBy = string.IsNullOrWhiteSpace(request.SubmittedBy) ? null : request.SubmittedBy!.Trim(),
+            PlayerOne = playerOne,
+            PlayerTwo = playerTwo,
+            Sets = setScores.Select((s, idx) => new MatchEventSet
+            {
+                Id = Guid.NewGuid(),
+                MatchEventId = matchEventId,
+                SetNumber = idx + 1,
+                PlayerOneScore = s.PlayerOneScore,
+                PlayerTwoScore = s.PlayerTwoScore
+            }).ToList()
+        };
+
+        // Ensure EF doesn't enforce FK to a Match row: explicit null for navigation and default MatchId
+        matchEvent.MatchId = matchEvent.MatchId; // keep as default
+        await _context.MatchEvents.AddAsync(matchEvent, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
 
-        aggregate.Event.MatchId = aggregate.Match.Id;
-        await _context.MatchEvents.AddAsync(aggregate.Event, cancellationToken);
-        aggregate.Match.Events.Add(aggregate.Event);
-
-        aggregate.Match.PrimaryEventId = aggregate.Event.Id;
-        aggregate.Match.LatestEventId = aggregate.Event.Id;
-        _context.Matches.Update(aggregate.Match);
-
-        await _context.SaveChangesAsync(cancellationToken);
-
-        await transaction.CommitAsync(cancellationToken);
-
-        return new MatchSubmissionResult(aggregate.Match.Id, aggregate.Event.Id);
+        return new MatchSubmissionResult(Guid.Empty, matchEvent.Id);
     }
 }

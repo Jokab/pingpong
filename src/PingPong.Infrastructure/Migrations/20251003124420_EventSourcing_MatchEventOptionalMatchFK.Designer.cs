@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PingPong.Infrastructure.Persistence;
 
@@ -10,9 +11,11 @@ using PingPong.Infrastructure.Persistence;
 namespace PingPong.Infrastructure.Migrations
 {
     [DbContext(typeof(PingPongDbContext))]
-    partial class PingPongDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251003124420_EventSourcing_MatchEventOptionalMatchFK")]
+    partial class EventSourcing_MatchEventOptionalMatchFK
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.9");

@@ -52,22 +52,14 @@ public sealed class MatchSubmissionTests : IClassFixture<IntegrationTestWebAppli
 
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<PingPongDbContext>();
-        var match = await dbContext.Matches
-            .Include(m => m.Sets)
-            .Include(m => m.Events)
-            .ThenInclude(e => e.Sets)
+        var evt = await dbContext.MatchEvents
+            .Include(e => e.Sets)
             .SingleAsync();
 
-        Assert.Equal(payload!.MatchId, match.Id);
-        Assert.Equal(today, match.MatchDate);
-        Assert.Equal(2, match.PlayerOneSetsWon);
-        Assert.Equal(1, match.PlayerTwoSetsWon);
-        Assert.Equal(3, match.Sets.Count);
-
-        var matchEvent = Assert.Single(match.Events);
-        Assert.Equal(payload.EventId, matchEvent.Id);
-        Assert.Equal(3, matchEvent.Sets.Count);
-        Assert.Equal("integration-test", matchEvent.SubmittedBy);
+        Assert.Equal(payload!.EventId, evt.Id);
+        Assert.Equal(today, evt.MatchDate);
+        Assert.Equal(3, evt.Sets.Count);
+        Assert.Equal("integration-test", evt.SubmittedBy);
 
         var players = await dbContext.Players.ToListAsync();
         Assert.Equal(2, players.Count);

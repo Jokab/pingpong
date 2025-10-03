@@ -7,7 +7,7 @@ public sealed class MatchEvent
 {
     public Guid Id { get; set; }
 
-    public Guid MatchId { get; set; }
+    public Guid? MatchId { get; set; }
 
     public Match? Match { get; set; }
 

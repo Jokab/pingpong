@@ -33,5 +33,14 @@ public sealed class MatchEventConfiguration : IEntityTypeConfiguration<MatchEven
             .WithMany()
             .HasForeignKey(e => e.SupersedesEventId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // In the event-sourced model, MatchId/Match navigation is not used as a required FK
+        builder.Property(e => e.MatchId)
+            .IsRequired(false);
+
+        builder.HasOne(e => e.Match)
+            .WithMany(m => m.Events)
+            .HasForeignKey(e => e.MatchId)
+            .OnDelete(DeleteBehavior.NoAction);
     }
 }

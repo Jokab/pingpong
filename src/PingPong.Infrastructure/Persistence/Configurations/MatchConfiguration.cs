@@ -41,6 +41,6 @@ public sealed class MatchConfiguration : IEntityTypeConfiguration<Match>
         builder.HasMany(m => m.Events)
             .WithOne(e => e.Match)
             .HasForeignKey(e => e.MatchId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.NoAction);
     }
 }

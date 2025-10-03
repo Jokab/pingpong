@@ -41,44 +41,59 @@ public sealed class StandingsServiceTests
             new PlayerRating { PlayerId = carol.Id, CurrentRating = 1010, LastUpdatedAt = now },
             new PlayerRating { PlayerId = dave.Id, CurrentRating = 950, LastUpdatedAt = now });
 
-        context.Matches.AddRange(
-            new Match
+        context.MatchEvents.AddRange(
+            new MatchEvent
             {
                 Id = Guid.NewGuid(),
                 PlayerOneId = alice.Id,
                 PlayerTwoId = bob.Id,
                 MatchDate = today,
-                Status = MatchStatus.Active,
                 CreatedAt = now,
-                UpdatedAt = now,
-                PlayerOneSetsWon = 3,
-                PlayerTwoSetsWon = 1
+                Sets =
+                [
+                    new MatchEventSet { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 1, PlayerOneScore = 11, PlayerTwoScore = 7 },
+                    new MatchEventSet { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 2, PlayerOneScore = 11, PlayerTwoScore = 9 },
+                    new MatchEventSet { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 3, PlayerOneScore = 9, PlayerTwoScore = 11 },
+                    new MatchEventSet { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 4, PlayerOneScore = 11, PlayerTwoScore = 8 }
+                ]
             },
-            new Match
+            new MatchEvent
             {
                 Id = Guid.NewGuid(),
                 PlayerOneId = alice.Id,
                 PlayerTwoId = carol.Id,
                 MatchDate = today,
-                Status = MatchStatus.Active,
-                CreatedAt = now,
-                UpdatedAt = now,
-                PlayerOneSetsWon = 3,
-                PlayerTwoSetsWon = 0
+                CreatedAt = now.AddMinutes(1),
+                Sets =
+                [
+                    new MatchEventSet { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 1, PlayerOneScore = 11, PlayerTwoScore = 3 },
+                    new MatchEventSet { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 2, PlayerOneScore = 11, PlayerTwoScore = 6 },
+                    new MatchEventSet { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 3, PlayerOneScore = 11, PlayerTwoScore = 4 }
+                ]
             },
-            new Match
+            new MatchEvent
             {
                 Id = Guid.NewGuid(),
                 PlayerOneId = bob.Id,
                 PlayerTwoId = carol.Id,
                 MatchDate = today,
-                Status = MatchStatus.Active,
-                CreatedAt = now,
-                UpdatedAt = now,
-                PlayerOneSetsWon = 0,
-                PlayerTwoSetsWon = 3
+                CreatedAt = now.AddMinutes(2),
+                Sets =
+                [
+                    new MatchEventSet { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 1, PlayerOneScore = 5, PlayerTwoScore = 11 },
+                    new MatchEventSet { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 2, PlayerOneScore = 7, PlayerTwoScore = 11 },
+                    new MatchEventSet { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 3, PlayerOneScore = 9, PlayerTwoScore = 11 }
+                ]
             });
 
+        // Ensure MatchEventId is set for child sets (simulate EF cascade keying)
+        foreach (var e in context.MatchEvents.Local)
+        {
+            foreach (var s in e.Sets)
+            {
+                s.MatchEventId = e.Id;
+            }
+        }
         await context.SaveChangesAsync();
 
         var service = new StandingsService(context);

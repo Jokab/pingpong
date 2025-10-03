@@ -15,5 +15,11 @@ public sealed class MatchEventSetConfiguration : IEntityTypeConfiguration<MatchE
 
         builder.HasIndex(s => new { s.MatchEventId, s.SetNumber })
             .IsUnique();
+
+        builder.HasOne(s => s.MatchEvent)
+            .WithMany(e => e.Sets)
+            .HasForeignKey(s => s.MatchEventId)
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
