@@ -1,13 +1,13 @@
 <MudPaper Elevation="1" Class="pa-4 form-card">
     <MudStack Spacing="2">
-        <MudText Typo="Typo.h5" Class="font-weight-semibold">Register Match</MudText>
+        <MudText Typo="Typo.h5" Class="font-weight-semibold">Registrera match</MudText>
         <MudText Typo="Typo.body2" Color="Color.Secondary">
-            Log the final score right after your game so the standings stay fresh.
+            Logga slutresultatet direkt efter matchen så hålls tabellen aktuell.
         </MudText>
 
         <MudDivider />
 
-        <MudAutocomplete @bind-Value="_model.PlayerOne" Label="Player One" Dense="true"
+        <MudAutocomplete Value="_model.PlayerOne" ValueChanged="@((string? sel) => OnPlayerSelected(sel, isPlayerOne: true))" Label="Spelare ett" Dense="true"
                          SearchFunc="@((string value, CancellationToken token) => SearchPlayersAsync(value, token))" ToStringFunc="(s) => s"
                          ResetValueOnEmptyText="false" Clearable="true"
                          CoerceText="true" Immediate="true">
@@ -17,9 +17,18 @@
                     <MudText>@person</MudText>
                 </MudStack>
             </ItemTemplate>
+            <AfterItemsTemplate>
+                @if (!string.IsNullOrWhiteSpace(_lastQuery) && _lastTopScore < 0.9)
+                {
+                    <MudListItem T="string" OnClick="@(() => AddNewPlayerAsync(isPlayerOne: true))">
+                        <MudIcon Icon="@Icons.Material.Filled.PersonAdd" Class="mr-2" />
+                        Lägg till '@_lastQuery'
+                    </MudListItem>
+                }
+            </AfterItemsTemplate>
         </MudAutocomplete>
 
-        <MudAutocomplete @bind-Value="_model.PlayerTwo" Label="Player Two" Dense="true"
+        <MudAutocomplete Value="_model.PlayerTwo" ValueChanged="@((string? sel) => OnPlayerSelected(sel, isPlayerOne: false))" Label="Spelare två" Dense="true"
                          SearchFunc="@((string value, CancellationToken token) => SearchPlayersAsync(value, token))" ToStringFunc="(s) => s"
                          ResetValueOnEmptyText="false" Clearable="true"
                          CoerceText="true" Immediate="true">
@@ -29,12 +38,21 @@
                     <MudText>@person</MudText>
                 </MudStack>
             </ItemTemplate>
+            <AfterItemsTemplate>
+                @if (!string.IsNullOrWhiteSpace(_lastQuery) && _lastTopScore < 0.9)
+                {
+                    <MudListItem T="string" OnClick="@(() => AddNewPlayerAsync(isPlayerOne: false))">
+                        <MudIcon Icon="@Icons.Material.Filled.PersonAdd" Class="mr-2" />
+                        Lägg till '@_lastQuery'
+                    </MudListItem>
+                }
+            </AfterItemsTemplate>
         </MudAutocomplete>
 
-        <MudDatePicker Label="Match Date" @bind-Date="_model.MatchDate" />
+        <MudDatePicker Label="Matchdatum" @bind-Date="_model.MatchDate" />
 
         <MudStack Spacing="1">
-            <MudText Typo="Typo.subtitle2" Class="font-weight-semibold">Sets</MudText>
+            <MudText Typo="Typo.subtitle2" Class="font-weight-semibold">Set</MudText>
             <MudPaper Class="pa-2">
                 <MudStack Spacing="1">
                     @foreach (var set in _model.Sets)
@@ -44,10 +62,10 @@
                                 <MudText Typo="Typo.subtitle2">Set @set.Number</MudText>
                             </MudItem>
                             <MudItem xs="12" sm="4">
-                                <MudNumericField @bind-Value="set.PlayerOneScore" Label="Player One" Min="0" />
+                                <MudNumericField @bind-Value="set.PlayerOneScore" Label="Spelare ett" Min="0" />
                             </MudItem>
                             <MudItem xs="12" sm="4">
-                                <MudNumericField @bind-Value="set.PlayerTwoScore" Label="Player Two" Min="0" />
+                                <MudNumericField @bind-Value="set.PlayerTwoScore" Label="Spelare två" Min="0" />
                             </MudItem>
                         </MudGrid>
                         <MudDivider Class="my-1" />
@@ -55,11 +73,11 @@
 
                     <MudStack Row="true" Justify="Justify.FlexStart" Spacing="1">
                         <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="AddSet" StartIcon="@Icons.Material.Filled.Add">
-                            Add Set
+                            Lägg till set
                         </MudButton>
                         <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Disabled="_model.Sets.Count <= 1"
                                    OnClick="RemoveSet" StartIcon="@Icons.Material.Filled.Remove">
-                            Remove Set
+                            Ta bort set
                         </MudButton>
                     </MudStack>
                 </MudStack>
@@ -76,7 +94,7 @@
         <MudButton Variant="Variant.Filled" Color="Color.Primary"
                    Disabled="_isSubmitting" StartIcon="@Icons.Material.Filled.Send"
                    OnClick="@SubmitAsync">
-            @(_isSubmitting ? "Submitting..." : "Submit")
+            @(_isSubmitting ? "Skickar..." : "Skicka")
         </MudButton>
     </MudStack>
 </MudPaper>
@@ -91,16 +109,8 @@
     [Inject]
     private ISnackbar Snackbar { get; set; } = default!;
 
-    private readonly List<string> _demoPlayers =
-    [
-        "Alice",
-        "Bob",
-        "Charlie",
-        "Diana",
-        "Evelyn",
-        "Jakob",
-        "Morgan"
-    ];
+    private string? _lastQuery;
+    private double _lastTopScore;
 
     private readonly MatchSubmissionDraft _model = new();
     private bool _isSubmitting;
@@ -117,20 +127,24 @@
         }
     }
 
-    private Task<IEnumerable<string?>> SearchPlayersAsync(string value, CancellationToken cancellationToken)
+    private async Task<IEnumerable<string?>> SearchPlayersAsync(string value, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(value))
+        _lastQuery = value?.Trim();
+        _lastTopScore = 0;
+        if (string.IsNullOrWhiteSpace(_lastQuery) || _lastQuery!.Length < 2)
         {
-            return Task.FromResult<IEnumerable<string?>>(_demoPlayers);
+            return Array.Empty<string?>();
         }
 
-        var normalized = value.Trim();
-        var results = _demoPlayers
-            .Where(p => p.Contains(normalized, StringComparison.OrdinalIgnoreCase))
-            .Take(8)
-            .ToList();
-
-        return Task.FromResult<IEnumerable<string?>>(results);
+        var resp = await Http.GetFromJsonAsync<List<PlayerSuggestion>>($"/api/players?query={Uri.EscapeDataString(_lastQuery)}&size=10", cancellationToken);
+        var items = resp ?? new List<PlayerSuggestion>();
+        _lastTopScore = items.Count > 0 ? items[0].score : 0;
+        var names = items.Select(i => i.displayName).ToList<string?>();
+        if (names.Count == 0)
+        {
+            names.Add(" "); // placeholder item so popup opens and AfterItemsTemplate Add button is visible
+        }
+        return names;
     }
 
     private void AddSet()
@@ -157,17 +171,17 @@
         var p2 = _model.PlayerTwo?.Trim();
         if (string.IsNullOrWhiteSpace(p1) || string.IsNullOrWhiteSpace(p2))
         {
-            _error = "Both player names are required.";
+            _error = "Båda spelarnamnen krävs.";
             return;
         }
         if (string.Equals(p1, p2, StringComparison.OrdinalIgnoreCase))
         {
-            _error = "Players must be distinct.";
+            _error = "Spelarna måste vara olika.";
             return;
         }
         if (_model.Sets.Count == 0)
         {
-            _error = "Please add at least one set.";
+            _error = "Lägg till minst ett set.";
             return;
         }
 
@@ -190,12 +204,12 @@
             var body = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
             {
-                _error = $"Submit failed: {body}";
+                _error = $"Sändning misslyckades: {body}";
                 Snackbar.Add(_error, Severity.Error);
                 return;
             }
 
-            Snackbar.Add("Match submitted!", Severity.Success);
+            Snackbar.Add("Match inskickad!", Severity.Success);
             await OnSubmitted.InvokeAsync();
 
             // Reset simple fields but keep players for consecutive matches
@@ -204,7 +218,7 @@
         }
         catch (Exception ex)
         {
-            _error = $"Unexpected error: {ex.Message}";
+            _error = $"Oväntat fel: {ex.Message}";
             Snackbar.Add(_error, Severity.Error);
         }
         finally
@@ -238,4 +252,35 @@
 
         public int PlayerTwoScore { get; set; }
     }
+    private async Task AddNewPlayerAsync(bool isPlayerOne)
+    {
+        if (string.IsNullOrWhiteSpace(_lastQuery)) return;
+        var payload = new PlayerCreate(_lastQuery!);
+        var response = await Http.PostAsJsonAsync("/api/players", payload);
+        response.EnsureSuccessStatusCode();
+        var created = await response.Content.ReadFromJsonAsync<PlayerCreated>();
+        if (created is null) return;
+        if (isPlayerOne) _model.PlayerOne = created.displayName; else _model.PlayerTwo = created.displayName;
+        Snackbar.Add($"La till spelare '{created.displayName}'", Severity.Success);
+        StateHasChanged();
+    }
+
+    private async Task OnPlayerSelected(string? selection, bool isPlayerOne)
+    {
+        if (string.IsNullOrWhiteSpace(selection)) return;
+        if (selection.Trim().Length == 0) return; // ignore placeholder
+        // Detect synthetic add item
+        if (selection.StartsWith("Lägg till '") && selection.EndsWith("'", StringComparison.Ordinal))
+        {
+            // re-use last query to create
+            await AddNewPlayerAsync(isPlayerOne);
+            return;
+        }
+
+        if (isPlayerOne) _model.PlayerOne = selection; else _model.PlayerTwo = selection;
+    }
+
+    private sealed record PlayerSuggestion(Guid id, string displayName, double score, bool isExact);
+    private sealed record PlayerCreate(string DisplayName);
+    private sealed record PlayerCreated(Guid id, string displayName);
 }

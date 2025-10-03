@@ -107,7 +107,44 @@ app.MapGet("/api/history", async (
         });
     })
     .WithName("GetHistory");
+
+app.MapGet("/api/players", async (string? query, int? size, IPlayerDirectory directory, CancellationToken ct) =>
+    {
+        var q = query ?? string.Empty;
+        var s = size.GetValueOrDefault(10);
+        var results = await directory.SearchAsync(q, s, ct);
+        return Results.Ok(results.Select(r => new { id = r.PlayerId, displayName = r.DisplayName, score = r.Confidence, isExact = r.IsExactMatch }));
+    })
+    .WithName("SearchPlayers");
+
+app.MapPost("/api/players", async (PlayerCreateDto dto, IPlayerDirectory directory, CancellationToken ct) =>
+    {
+        if (dto is null || string.IsNullOrWhiteSpace(dto.DisplayName))
+            return Results.BadRequest(new { error = "displayName is required" });
+        var player = await directory.AddPlayerAsync(dto.DisplayName, ct);
+        return Results.Created($"/api/players/{player.Id}", new { id = player.Id, displayName = player.DisplayName });
+    })
+    .WithName("CreatePlayer");
     //.DisableAntiforgery(); // Alternative: disable antiforgery on this endpoint.
+
+app.MapGet("/api/standings", async (IStandingsService standingsService, CancellationToken ct) =>
+    {
+        var rows = await standingsService.GetStandingsAsync(ct);
+        return Results.Ok(new
+        {
+            items = rows.Select(r => new
+            {
+                playerId = r.PlayerId,
+                playerName = r.PlayerName,
+                matchesPlayed = r.MatchesPlayed,
+                wins = r.Wins,
+                losses = r.Losses,
+                winPercentage = r.WinPercentage,
+                currentRating = r.CurrentRating
+            })
+        });
+    })
+    .WithName("GetStandings");
 
 app.Run();
 

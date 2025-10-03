@@ -1,29 +1,29 @@
 @inject HttpClient Http
 
 <MudStack Spacing="2" Class="history-timeline">
-    <MudText Typo="Typo.h5" Class="font-weight-semibold">Match Log</MudText>
+    <MudText Typo="Typo.h5" Class="font-weight-semibold">Matchlogg</MudText>
     <MudText Typo="Typo.body2" Color="Color.Secondary">
-        Append-only event history. Edits appear as new entries; effective standings derive from latest events per match slot.
+        Endast tillägg av händelser. Ändringar visas som nya poster; aktuell tabell beräknas från senaste händelser per match.
     </MudText>
 
     <MudTable T="HistoryRow" ServerData="LoadServerData" Dense="true" Hover="true" Elevation="0" RowsPerPage="25" Bordered="false">
         <HeaderContent>
-            <MudTh>Date</MudTh>
+            <MudTh>Datum</MudTh>
             <MudTh>#</MudTh>
             <MudTh>Match</MudTh>
-            <MudTh>Sets</MudTh>
-            <MudTh>Winner</MudTh>
-            <MudTh>Submitted By</MudTh>
-            <MudTh>Created</MudTh>
+            <MudTh>Set</MudTh>
+            <MudTh>Vinnare</MudTh>
+            <MudTh>Inskickad av</MudTh>
+            <MudTh>Skapad</MudTh>
         </HeaderContent>
         <RowTemplate>
-            <MudTd DataLabel="Date">@context.MatchDate.ToString("yyyy-MM-dd")</MudTd>
+            <MudTd DataLabel="Datum">@context.MatchDate.ToString("yyyy-MM-dd")</MudTd>
             <MudTd DataLabel="#">@context.DayOrdinal</MudTd>
-            <MudTd DataLabel="Match">@context.PlayerOneName vs @context.PlayerTwoName</MudTd>
-            <MudTd DataLabel="Sets">@string.Join(", ", context.Sets.Select(s => $"{s.playerOneScore}-{s.playerTwoScore}"))</MudTd>
-            <MudTd DataLabel="Winner">@(string.IsNullOrWhiteSpace(context.WinnerName) ? "-" : context.WinnerName)</MudTd>
-            <MudTd DataLabel="Submitted By">@context.SubmittedBy</MudTd>
-            <MudTd DataLabel="Created">@context.CreatedAt.LocalDateTime</MudTd>
+            <MudTd DataLabel="Match">@context.PlayerOneName mot @context.PlayerTwoName</MudTd>
+            <MudTd DataLabel="Set">@string.Join(", ", context.Sets.Select(s => $"{s.playerOneScore}-{s.playerTwoScore}"))</MudTd>
+            <MudTd DataLabel="Vinnare">@(string.IsNullOrWhiteSpace(context.WinnerName) ? "-" : context.WinnerName)</MudTd>
+            <MudTd DataLabel="Inskickad av">@context.SubmittedBy</MudTd>
+            <MudTd DataLabel="Skapad">@context.CreatedAt.LocalDateTime</MudTd>
         </RowTemplate>
     </MudTable>
 </MudStack>

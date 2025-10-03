@@ -3,7 +3,7 @@
 <MudPaper Elevation="1" Class="pa-4 standings-card">
     <MudStack Spacing="2">
         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-            <MudText Typo="Typo.h5" Class="font-weight-semibold">Standings</MudText>
+            <MudText Typo="Typo.h5" Class="font-weight-semibold">Tabell</MudText>
             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
                 @if (_isLoading)
                 {
@@ -11,7 +11,7 @@
                 }
                 <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh"
                            Disabled="_isLoading" OnClick="@RefreshAsync">
-                    Refresh
+                    Uppdatera
                 </MudButton>
             </MudStack>
         </MudStack>
@@ -26,16 +26,16 @@
         <MudTable Items="_rows" Hover="true" Dense="true" Class="standings-table" Loading="_isLoading">
             <HeaderContent>
                 <MudTh>#</MudTh>
-                <MudTh>Player</MudTh>
-                <MudTh class="text-center">Matches</MudTh>
-                <MudTh class="text-center">Wins</MudTh>
-                <MudTh class="text-center">Losses</MudTh>
-                <MudTh class="text-center">Win %</MudTh>
-                <MudTh class="text-center">Rating</MudTh>
+                <MudTh>Spelare</MudTh>
+                <MudTh class="text-center">Matcher</MudTh>
+                <MudTh class="text-center">Vinster</MudTh>
+                <MudTh class="text-center">Förluster</MudTh>
+                <MudTh class="text-center">Vinst %</MudTh>
+                <MudTh class="text-center">Ranking</MudTh>
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="#">@context.Position</MudTd>
-                <MudTd DataLabel="Player">
+                <MudTd DataLabel="Spelare">
                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
                         <MudAvatar Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled">
                             @context.Initials
@@ -43,21 +43,21 @@
                         <MudText>@context.Name</MudText>
                     </MudStack>
                 </MudTd>
-                <MudTd DataLabel="Matches" Class="text-center">@context.MatchesPlayed</MudTd>
-                <MudTd DataLabel="Wins" Class="text-center">@context.Wins</MudTd>
-                <MudTd DataLabel="Losses" Class="text-center">@context.Losses</MudTd>
-                <MudTd DataLabel="Win %" Class="text-center">@context.WinPercentage.ToString("P0")</MudTd>
-                <MudTd DataLabel="Rating" Class="text-center">@context.Rating.ToString("F0")</MudTd>
+                <MudTd DataLabel="Matcher" Class="text-center">@context.MatchesPlayed</MudTd>
+                <MudTd DataLabel="Vinster" Class="text-center">@context.Wins</MudTd>
+                <MudTd DataLabel="Förluster" Class="text-center">@context.Losses</MudTd>
+                <MudTd DataLabel="Vinst %" Class="text-center">@context.WinPercentage.ToString("P0")</MudTd>
+                <MudTd DataLabel="Ranking" Class="text-center">@context.Rating.ToString("F0")</MudTd>
             </RowTemplate>
             <NoRecordsContent>
                 <MudText Typo="Typo.body2" Class="ma-4" Color="Color.Secondary">
-                    No matches recorded yet. Be the first to log a game!
+                    Inga matcher registrerade ännu. Var först med att logga en match!
                 </MudText>
             </NoRecordsContent>
         </MudTable>
 
         <MudAlert Severity="Severity.Info" Dense="true" Variant="Variant.Text">
-            Head-to-head breakdowns and live refresh will appear here as those features land.
+            Inbördes möten och liveuppdatering visas här när funktionerna landar.
         </MudAlert>
     </MudStack>
 </MudPaper>
