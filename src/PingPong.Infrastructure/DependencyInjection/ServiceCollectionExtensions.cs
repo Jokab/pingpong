@@ -40,6 +40,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IMatchSubmissionService, MatchSubmissionService>();
         services.AddScoped<IStandingsService, StandingsService>();
         services.AddScoped<IPlayerDirectory, PlayerDirectory>();
+        services.AddScoped<IHistoryService, HistoryService>();
 
         return services;
     }

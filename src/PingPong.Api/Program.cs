@@ -87,6 +87,26 @@ app.MapPost("/matches", async (MatchSubmissionDto dto, IMatchSubmissionService m
     })
     .WithName("SubmitMatch")
     .DisableAntiforgery();
+
+app.MapGet("/api/history", async (
+        int? page,
+        int? pageSize,
+        Guid? playerId,
+        IHistoryService historyService,
+        CancellationToken cancellationToken) =>
+    {
+        var p = page.GetValueOrDefault(1);
+        var ps = pageSize.GetValueOrDefault(25);
+        var (items, total) = await historyService.GetHistoryAsync(p, ps, playerId, cancellationToken);
+        return Results.Ok(new
+        {
+            page = p,
+            pageSize = ps,
+            total,
+            items
+        });
+    })
+    .WithName("GetHistory");
     //.DisableAntiforgery(); // Alternative: disable antiforgery on this endpoint.
 
 app.Run();

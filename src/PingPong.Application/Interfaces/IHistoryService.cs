@@ -4,5 +4,9 @@ namespace PingPong.Application.Interfaces;
 
 public interface IHistoryService
 {
-    Task<IReadOnlyList<MatchHistoryEntry>> GetHistoryAsync(DateOnly? from = null, DateOnly? to = null, CancellationToken cancellationToken = default);
+    Task<(IReadOnlyList<MatchHistoryEntry> Items, int TotalCount)> GetHistoryAsync(
+        int page,
+        int pageSize,
+        Guid? playerId = null,
+        CancellationToken cancellationToken = default);
 }

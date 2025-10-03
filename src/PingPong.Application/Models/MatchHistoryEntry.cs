@@ -2,13 +2,14 @@ namespace PingPong.Application.Models;
 
 public sealed record MatchHistoryEntry(
     Guid EventId,
-    Guid MatchId,
     DateOnly MatchDate,
-    int DaySequence,
+    int DayOrdinal,
     string PlayerOneName,
     string PlayerTwoName,
-    IReadOnlyList<SetScore> Sets,
-    bool IsCorrection,
-    DateTimeOffset SubmittedAt);
+    IReadOnlyList<SetPair> Sets,
+    Guid? WinnerPlayerId,
+    string? WinnerName,
+    string? SubmittedBy,
+    DateTimeOffset CreatedAt);
 
-public sealed record SetScore(int SetNumber, int PlayerOneScore, int PlayerTwoScore);
+public sealed record SetPair(int PlayerOneScore, int PlayerTwoScore);

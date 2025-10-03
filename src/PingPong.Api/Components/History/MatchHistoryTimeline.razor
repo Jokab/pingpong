@@ -1,66 +1,61 @@
+@inject HttpClient Http
+
 <MudStack Spacing="2" Class="history-timeline">
     <MudText Typo="Typo.h5" Class="font-weight-semibold">Match Log</MudText>
     <MudText Typo="Typo.body2" Color="Color.Secondary">
-        Immutable event history preview. Amendments will appear as additional entries so nothing is lost.
+        Append-only event history. Edits appear as new entries; effective standings derive from latest events per match slot.
     </MudText>
 
-    @foreach (var group in _entries.GroupBy(e => e.Date))
-    {
-        <MudStack Spacing="1" Class="mt-4">
-            <MudText Typo="Typo.subtitle2" Class="text-uppercase text-secondary">
-                @group.Key.ToString("MMMM dd, yyyy")
-            </MudText>
-            @foreach (var entry in group)
-            {
-                <MudPaper Elevation="0" Class="pa-3">
-                    <MudStack Spacing="1">
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Justify="Justify.SpaceBetween">
-                            <MudText Typo="Typo.body1" Class="font-weight-semibold">
-                                @entry.Label
-                            </MudText>
-                            <MudChip T="string" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small">
-                                @entry.ResultText
-                            </MudChip>
-                        </MudStack>
-                        <MudStack Row="true" Spacing="1">
-                            <MudIcon Icon="@Icons.Material.Filled.SportsTennis" Color="Color.Secondary" />
-                            <MudText Typo="Typo.body2">@entry.PlayerOne vs @entry.PlayerTwo</MudText>
-                        </MudStack>
-                        <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
-                            <MudIcon Icon="@Icons.Material.Filled.Score" Color="Color.Secondary" />
-                            <MudText Typo="Typo.body2">Sets: @entry.SetSummary</MudText>
-                        </MudStack>
-                        @if (entry.IsCorrection)
-                        {
-                            <MudAlert Severity="Severity.Warning" Variant="Variant.Text" Dense="true">
-                                Correction event — supersedes earlier log.
-                            </MudAlert>
-                        }
-                    </MudStack>
-                </MudPaper>
-            }
-        </MudStack>
-    }
+    <MudTable T="HistoryRow" ServerData="LoadServerData" Dense="true" Hover="true" Elevation="0" RowsPerPage="25" Bordered="false">
+        <HeaderContent>
+            <MudTh>Date</MudTh>
+            <MudTh>#</MudTh>
+            <MudTh>Match</MudTh>
+            <MudTh>Sets</MudTh>
+            <MudTh>Winner</MudTh>
+            <MudTh>Submitted By</MudTh>
+            <MudTh>Created</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Date">@context.MatchDate.ToString("yyyy-MM-dd")</MudTd>
+            <MudTd DataLabel="#">@context.DayOrdinal</MudTd>
+            <MudTd DataLabel="Match">@context.PlayerOneName vs @context.PlayerTwoName</MudTd>
+            <MudTd DataLabel="Sets">@string.Join(", ", context.Sets.Select(s => $"{s.playerOneScore}-{s.playerTwoScore}"))</MudTd>
+            <MudTd DataLabel="Winner">@(string.IsNullOrWhiteSpace(context.WinnerName) ? "-" : context.WinnerName)</MudTd>
+            <MudTd DataLabel="Submitted By">@context.SubmittedBy</MudTd>
+            <MudTd DataLabel="Created">@context.CreatedAt.LocalDateTime</MudTd>
+        </RowTemplate>
+    </MudTable>
 </MudStack>
 
 @code {
-    private readonly IReadOnlyList<MatchHistoryDemoEntry> _entries =
-    [
-        new MatchHistoryDemoEntry(new DateOnly(2025, 2, 28), 1, "Alice", "Bob", "11-8, 8-11, 11-7", "2-1", false),
-        new MatchHistoryDemoEntry(new DateOnly(2025, 2, 28), 2, "Charlie", "Diana", "11-9, 11-9", "2-0", false),
-        new MatchHistoryDemoEntry(new DateOnly(2025, 2, 28), 3, "Alice", "Bob", "11-5, 11-9", "2-0", true),
-        new MatchHistoryDemoEntry(new DateOnly(2025, 2, 27), 1, "Morgan", "Evelyn", "8-11, 11-7, 11-9", "2-1", false)
-    ];
-
-    private sealed record MatchHistoryDemoEntry(
-        DateOnly Date,
-        int Ordinal,
-        string PlayerOne,
-        string PlayerTwo,
-        string SetSummary,
-        string ResultText,
-        bool IsCorrection)
+    private async Task<TableData<HistoryRow>> LoadServerData(TableState state, CancellationToken cancellationToken)
     {
-        public string Label => $"#{Ordinal} · {Date.ToString("MMM dd")}";
+        var page = state.Page + 1;
+        var pageSize = state.PageSize <= 0 ? 25 : state.PageSize;
+        var url = $"/api/history?page={page}&pageSize={pageSize}";
+
+        var resp = await Http.GetFromJsonAsync<PagedResponse<HistoryRow>>(url, cancellationToken);
+        if (resp is null)
+            return new TableData<HistoryRow> { TotalItems = 0, Items = [] };
+        return new TableData<HistoryRow> { TotalItems = resp.total, Items = resp.items };
     }
+
+    private sealed record PagedResponse<T>(int page, int pageSize, int total, List<T> items);
+
+    private sealed record HistoryRow(
+        Guid EventId,
+        DateOnly MatchDate,
+        int DayOrdinal,
+        string PlayerOneName,
+        string PlayerTwoName,
+        List<SetPairDto> Sets,
+        Guid? WinnerPlayerId,
+        string? WinnerName,
+        string? SubmittedBy,
+        DateTimeOffset CreatedAt)
+    {
+    }
+
+    private sealed record SetPairDto(int playerOneScore, int playerTwoScore);
 }
