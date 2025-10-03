@@ -66,17 +66,31 @@
             </MudPaper>
         </MudStack>
 
-        <MudAlert Severity="Severity.Info" Dense="true">
-            Scoring validation and submission wiring will arrive in the next iteration.
-        </MudAlert>
+        @if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true">
+                @_error
+            </MudAlert>
+        }
 
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="true" StartIcon="@Icons.Material.Filled.Send">
-            Submit (coming soon)
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   Disabled="_isSubmitting" StartIcon="@Icons.Material.Filled.Send"
+                   OnClick="@SubmitAsync">
+            @(_isSubmitting ? "Submitting..." : "Submit")
         </MudButton>
     </MudStack>
 </MudPaper>
 
 @code {
+    [Parameter]
+    public EventCallback OnSubmitted { get; set; }
+
+    [Inject]
+    private HttpClient Http { get; set; } = default!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = default!;
+
     private readonly List<string> _demoPlayers =
     [
         "Alice",
@@ -89,6 +103,8 @@
     ];
 
     private readonly MatchSubmissionDraft _model = new();
+    private bool _isSubmitting;
+    private string? _error;
 
     protected override void OnInitialized()
     {
@@ -128,6 +144,73 @@
         if (_model.Sets.Count > 1)
         {
             _model.Sets.RemoveAt(_model.Sets.Count - 1);
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (_isSubmitting) return;
+        _error = null;
+        StateHasChanged();
+
+        var p1 = _model.PlayerOne?.Trim();
+        var p2 = _model.PlayerTwo?.Trim();
+        if (string.IsNullOrWhiteSpace(p1) || string.IsNullOrWhiteSpace(p2))
+        {
+            _error = "Both player names are required.";
+            return;
+        }
+        if (string.Equals(p1, p2, StringComparison.OrdinalIgnoreCase))
+        {
+            _error = "Players must be distinct.";
+            return;
+        }
+        if (_model.Sets.Count == 0)
+        {
+            _error = "Please add at least one set.";
+            return;
+        }
+
+        var sets = _model.Sets
+            .Select(s => new SetScoreDto(s.PlayerOneScore, s.PlayerTwoScore))
+            .ToList();
+
+        var dto = new MatchSubmissionDto(
+            p1!,
+            p2!,
+            _model.MatchDate.HasValue ? DateOnly.FromDateTime(_model.MatchDate.Value) : DateOnly.FromDateTime(DateTime.UtcNow),
+            sets,
+            "ui");
+
+        try
+        {
+            _isSubmitting = true;
+            StateHasChanged();
+            var response = await Http.PostAsJsonAsync("/matches", dto);
+            var body = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+            {
+                _error = $"Submit failed: {body}";
+                Snackbar.Add(_error, Severity.Error);
+                return;
+            }
+
+            Snackbar.Add("Match submitted!", Severity.Success);
+            await OnSubmitted.InvokeAsync();
+
+            // Reset simple fields but keep players for consecutive matches
+            _model.Sets.Clear();
+            for (var i = 0; i < 3; i++) AddSet();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Unexpected error: {ex.Message}";
+            Snackbar.Add(_error, Severity.Error);
+        }
+        finally
+        {
+            _isSubmitting = false;
+            StateHasChanged();
         }
     }
 

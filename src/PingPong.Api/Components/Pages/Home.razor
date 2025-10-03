@@ -1,4 +1,5 @@
 @page "/"
+@rendermode RenderMode.InteractiveServer
 
 <PageTitle>Scoreboard</PageTitle>
 
@@ -10,10 +11,22 @@
 
     <MudGrid Spacing="3">
         <MudItem xs="12" md="5" lg="4">
-            <MatchSubmissionForm />
+            <MatchSubmissionForm OnSubmitted="RefreshStandingsAsync" />
         </MudItem>
         <MudItem xs="12" md="7" lg="8">
-            <StandingsTable />
+            <StandingsTable @ref="_standingsRef" />
         </MudItem>
     </MudGrid>
 </MudStack>
+
+@code {
+    private Standings.StandingsTable? _standingsRef;
+
+    private async Task RefreshStandingsAsync()
+    {
+        if (_standingsRef is not null)
+        {
+            await _standingsRef.RefreshAsync();
+        }
+    }
+}

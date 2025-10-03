@@ -10,7 +10,7 @@
                     <MudProgressCircular Indeterminate="true" Size="Size.Small" Class="mr-2" />
                 }
                 <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh"
-                           Disabled="_isLoading" OnClick="RefreshAsync">
+                           Disabled="_isLoading" OnClick="@RefreshAsync">
                     Refresh
                 </MudButton>
             </MudStack>
@@ -72,7 +72,7 @@
         await LoadAsync();
     }
 
-    private async Task RefreshAsync()
+    public async Task RefreshAsync()
     {
         await LoadAsync();
     }

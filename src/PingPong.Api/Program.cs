@@ -16,6 +16,11 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddMudServices();
+builder.Services.AddScoped(sp =>
+{
+    var navigation = sp.GetRequiredService<Microsoft.AspNetCore.Components.NavigationManager>();
+    return new HttpClient { BaseAddress = new Uri(navigation.BaseUri) };
+});
 
 var app = builder.Build();
 
@@ -80,7 +85,9 @@ app.MapPost("/matches", async (MatchSubmissionDto dto, IMatchSubmissionService m
             return Results.BadRequest(new { error = ex.Message });
         }
     })
-    .WithName("SubmitMatch");
+    .WithName("SubmitMatch")
+    .DisableAntiforgery();
+    //.DisableAntiforgery(); // Alternative: disable antiforgery on this endpoint.
 
 app.Run();
 
