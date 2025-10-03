@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace PingPong.Api.Contracts;
 
 public sealed record MatchSubmissionDto(

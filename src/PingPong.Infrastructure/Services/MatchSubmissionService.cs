@@ -1,12 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
 using PingPong.Application.Interfaces;
 using PingPong.Application.Models;
-using PingPong.Domain.Aggregates;
 using PingPong.Domain.Entities;
 using PingPong.Domain.Exceptions;
 using PingPong.Domain.ValueObjects;

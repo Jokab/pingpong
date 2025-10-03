@@ -1,12 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using PingPong.Application.Interfaces;
 using PingPong.Application.Models;
-using PingPong.Domain.Entities;
 using PingPong.Infrastructure.Persistence;
 
 namespace PingPong.Infrastructure.Services;

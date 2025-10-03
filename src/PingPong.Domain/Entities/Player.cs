@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace PingPong.Domain.Entities;
 
 public sealed class Player

@@ -1,5 +1,3 @@
-using System;
-
 namespace PingPong.Domain.Entities;
 
 public sealed class MatchEventSet

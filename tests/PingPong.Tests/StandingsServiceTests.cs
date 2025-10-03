@@ -1,12 +1,8 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using PingPong.Domain.Entities;
 using PingPong.Infrastructure.Persistence;
 using PingPong.Infrastructure.Services;
-using Xunit;
 
 namespace PingPong.Tests;
 
