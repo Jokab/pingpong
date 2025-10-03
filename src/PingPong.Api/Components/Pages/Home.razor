@@ -1,0 +1,19 @@
+@page "/"
+
+<PageTitle>Scoreboard</PageTitle>
+
+<MudStack Spacing="3">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+        <MudText Typo="Typo.h4" Class="font-weight-semibold">Office PingPong</MudText>
+        <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Log a match, update the standings.</MudText>
+    </MudStack>
+
+    <MudGrid Spacing="3">
+        <MudItem xs="12" md="5" lg="4">
+            <MatchSubmissionForm />
+        </MudItem>
+        <MudItem xs="12" md="7" lg="8">
+            <StandingsTable />
+        </MudItem>
+    </MudGrid>
+</MudStack>

@@ -1,0 +1,14 @@
+@page "/history"
+
+<PageTitle>History</PageTitle>
+
+<MudStack Spacing="3">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+        <MudText Typo="Typo.h4" Class="font-weight-semibold">Match History</MudText>
+        <MudChip T="string" Color="Color.Secondary" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.History">
+            Event sourced log
+        </MudChip>
+    </MudStack>
+
+    <MatchHistoryTimeline />
+</MudStack>

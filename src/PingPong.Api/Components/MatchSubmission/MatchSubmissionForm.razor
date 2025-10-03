@@ -1,0 +1,158 @@
+<MudPaper Elevation="1" Class="pa-4 form-card">
+    <MudStack Spacing="2">
+        <MudText Typo="Typo.h5" Class="font-weight-semibold">Register Match</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">
+            Log the final score right after your game so the standings stay fresh.
+        </MudText>
+
+        <MudDivider />
+
+        <MudAutocomplete @bind-Value="_model.PlayerOne" Label="Player One" Dense="true"
+                         SearchFunc="@((string value, CancellationToken token) => SearchPlayersAsync(value, token))" ToStringFunc="(s) => s"
+                         ResetValueOnEmptyText="false" Clearable="true"
+                         CoerceText="true" Immediate="true">
+            <ItemTemplate Context="person">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                    <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" />
+                    <MudText>@person</MudText>
+                </MudStack>
+            </ItemTemplate>
+        </MudAutocomplete>
+
+        <MudAutocomplete @bind-Value="_model.PlayerTwo" Label="Player Two" Dense="true"
+                         SearchFunc="@((string value, CancellationToken token) => SearchPlayersAsync(value, token))" ToStringFunc="(s) => s"
+                         ResetValueOnEmptyText="false" Clearable="true"
+                         CoerceText="true" Immediate="true">
+            <ItemTemplate Context="person">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                    <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" />
+                    <MudText>@person</MudText>
+                </MudStack>
+            </ItemTemplate>
+        </MudAutocomplete>
+
+        <MudDatePicker Label="Match Date" @bind-Date="_model.MatchDate" />
+
+        <MudStack Spacing="1">
+            <MudText Typo="Typo.subtitle2" Class="font-weight-semibold">Sets</MudText>
+            <MudPaper Class="pa-2">
+                <MudStack Spacing="1">
+                    @foreach (var set in _model.Sets)
+                    {
+                        <MudGrid>
+                            <MudItem xs="12" sm="4">
+                                <MudText Typo="Typo.subtitle2">Set @set.Number</MudText>
+                            </MudItem>
+                            <MudItem xs="12" sm="4">
+                                <MudNumericField @bind-Value="set.PlayerOneScore" Label="Player One" Min="0" />
+                            </MudItem>
+                            <MudItem xs="12" sm="4">
+                                <MudNumericField @bind-Value="set.PlayerTwoScore" Label="Player Two" Min="0" />
+                            </MudItem>
+                        </MudGrid>
+                        <MudDivider Class="my-1" />
+                    }
+
+                    <MudStack Row="true" Justify="Justify.FlexStart" Spacing="1">
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="AddSet" StartIcon="@Icons.Material.Filled.Add">
+                            Add Set
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Disabled="_model.Sets.Count <= 1"
+                                   OnClick="RemoveSet" StartIcon="@Icons.Material.Filled.Remove">
+                            Remove Set
+                        </MudButton>
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+        </MudStack>
+
+        <MudAlert Severity="Severity.Info" Dense="true">
+            Scoring validation and submission wiring will arrive in the next iteration.
+        </MudAlert>
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="true" StartIcon="@Icons.Material.Filled.Send">
+            Submit (coming soon)
+        </MudButton>
+    </MudStack>
+</MudPaper>
+
+@code {
+    private readonly List<string> _demoPlayers =
+    [
+        "Alice",
+        "Bob",
+        "Charlie",
+        "Diana",
+        "Evelyn",
+        "Jakob",
+        "Morgan"
+    ];
+
+    private readonly MatchSubmissionDraft _model = new();
+
+    protected override void OnInitialized()
+    {
+        if (_model.Sets.Count == 0)
+        {
+            for (var i = 0; i < 3; i++)
+            {
+                AddSet();
+            }
+        }
+    }
+
+    private Task<IEnumerable<string?>> SearchPlayersAsync(string value, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return Task.FromResult<IEnumerable<string?>>(_demoPlayers);
+        }
+
+        var normalized = value.Trim();
+        var results = _demoPlayers
+            .Where(p => p.Contains(normalized, StringComparison.OrdinalIgnoreCase))
+            .Take(8)
+            .ToList();
+
+        return Task.FromResult<IEnumerable<string?>>(results);
+    }
+
+    private void AddSet()
+    {
+        var nextNumber = _model.Sets.Count + 1;
+        _model.Sets.Add(new SetDraft(nextNumber));
+    }
+
+    private void RemoveSet()
+    {
+        if (_model.Sets.Count > 1)
+        {
+            _model.Sets.RemoveAt(_model.Sets.Count - 1);
+        }
+    }
+
+    private sealed class MatchSubmissionDraft
+    {
+        public string? PlayerOne { get; set; }
+
+        public string? PlayerTwo { get; set; }
+
+        public DateTime? MatchDate { get; set; } = DateTime.Today;
+
+        public List<SetDraft> Sets { get; } = new();
+    }
+
+    private sealed class SetDraft
+    {
+        public SetDraft(int number)
+        {
+            Number = number;
+        }
+
+        public int Number { get; }
+
+        public int PlayerOneScore { get; set; }
+
+        public int PlayerTwoScore { get; set; }
+    }
+}

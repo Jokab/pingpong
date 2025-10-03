@@ -1,0 +1,3 @@
+model_verbosity = "high"
+show_raw_agent_reasoning = true
+sandbox_mode = "danger-full-access"

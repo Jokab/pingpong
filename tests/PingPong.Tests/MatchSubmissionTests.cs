@@ -1,0 +1,75 @@
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Http.Json;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using PingPong.Api.Contracts;
+using PingPong.Infrastructure.Persistence;
+using PingPong.Tests.Support;
+using Xunit;
+
+namespace PingPong.Tests;
+
+public sealed class MatchSubmissionTests : IClassFixture<IntegrationTestWebApplicationFactory>
+{
+    private readonly IntegrationTestWebApplicationFactory _factory;
+
+    public MatchSubmissionTests(IntegrationTestWebApplicationFactory factory)
+    {
+        _factory = factory;
+    }
+
+    [Fact]
+    public async Task SubmitMatch_PersistsMatchEventAndPlayers()
+    {
+        // Arrange
+        var client = _factory.CreateClient();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+
+        var request = new MatchSubmissionDto(
+            "Alice",
+            "Bob",
+            today,
+            new List<SetScoreDto>
+            {
+                new(11, 8),
+                new(7, 11),
+                new(11, 9)
+            },
+            "integration-test");
+
+        // Act
+        var response = await client.PostAsJsonAsync("/matches", request);
+        var rawBody = await response.Content.ReadAsStringAsync();
+
+        // Assert
+        Assert.True(response.IsSuccessStatusCode, $"Status {(int)response.StatusCode} {response.StatusCode}: {rawBody}");
+
+        var payload = await response.Content.ReadFromJsonAsync<MatchSubmissionResponse>();
+        Assert.NotNull(payload);
+
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<PingPongDbContext>();
+        var match = await dbContext.Matches
+            .Include(m => m.Sets)
+            .Include(m => m.Events)
+            .ThenInclude(e => e.Sets)
+            .SingleAsync();
+
+        Assert.Equal(payload!.MatchId, match.Id);
+        Assert.Equal(today, match.MatchDate);
+        Assert.Equal(2, match.PlayerOneSetsWon);
+        Assert.Equal(1, match.PlayerTwoSetsWon);
+        Assert.Equal(3, match.Sets.Count);
+
+        var matchEvent = Assert.Single(match.Events);
+        Assert.Equal(payload.EventId, matchEvent.Id);
+        Assert.Equal(3, matchEvent.Sets.Count);
+        Assert.Equal("integration-test", matchEvent.SubmittedBy);
+
+        var players = await dbContext.Players.ToListAsync();
+        Assert.Equal(2, players.Count);
+    }
+}
