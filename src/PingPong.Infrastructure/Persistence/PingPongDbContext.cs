@@ -23,4 +23,13 @@ public sealed class PingPongDbContext(DbContextOptions<PingPongDbContext> option
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(PingPongDbContext).Assembly);
     }
+
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        // Ensure proper PostgreSQL types for common .NET types
+        configurationBuilder.Properties<Guid>().HaveColumnType("uuid");
+        configurationBuilder.Properties<DateTimeOffset>().HaveColumnType("timestamptz");
+        configurationBuilder.Properties<DateTime>().HaveColumnType("timestamp");
+        configurationBuilder.Properties<decimal>().HaveColumnType("numeric");
+    }
 }

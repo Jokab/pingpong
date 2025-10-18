@@ -1,0 +1,57 @@
+# Ignore build outputs
+**/bin/
+**/obj/
+**/out/
+
+# Ignore development database files
+**/*.db
+**/*.db-shm
+**/*.db-wal
+
+# Ignore IDE and editor files
+**/.vs/
+**/.vscode/
+**/.idea/
+**/*.user
+**/*.suo
+**/*.userosscache
+**/*.sln.docstates
+**/.DS_Store
+
+# Ignore test results
+**/TestResults/
+**/coverage/
+
+# Ignore NuGet packages
+**/*.nupkg
+**/.nuget/
+
+# Ignore logs
+**/logs/
+**/*.log
+
+# Ignore temporary files
+**/tmp/
+**/temp/
+
+# Ignore git
+.git/
+.gitignore
+.gitattributes
+
+# Ignore documentation
+**/*.md
+!README.md
+docs/
+
+# Ignore CI/CD files
+.github/
+.azure/
+.config/
+
+# Ignore fly.io config (will be managed separately)
+fly.toml
+
+# Ignore config files
+config.toml
+

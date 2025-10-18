@@ -11,7 +11,7 @@ using PingPong.Infrastructure.Persistence;
 namespace PingPong.Infrastructure.Migrations
 {
     [DbContext(typeof(PingPongDbContext))]
-    [Migration("20251003120602_InitialCreate")]
+    [Migration("20251018184523_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -24,39 +24,39 @@ namespace PingPong.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasPrecision(3)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("timestamptz");
 
                     b.Property<Guid?>("LatestEventId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("MatchDate")
                         .HasColumnType("date");
 
                     b.Property<Guid>("PlayerOneId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<int>("PlayerOneSetsWon")
                         .HasColumnType("INTEGER");
 
                     b.Property<Guid>("PlayerTwoId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<int>("PlayerTwoSetsWon")
                         .HasColumnType("INTEGER");
 
                     b.Property<Guid?>("PrimaryEventId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Status")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasPrecision(3)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("timestamptz");
 
                     b.HasKey("Id");
 
@@ -74,11 +74,11 @@ namespace PingPong.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasPrecision(3)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("timestamptz");
 
                     b.Property<int>("EventType")
                         .HasColumnType("INTEGER");
@@ -86,20 +86,20 @@ namespace PingPong.Infrastructure.Migrations
                     b.Property<DateTime>("MatchDate")
                         .HasColumnType("date");
 
-                    b.Property<Guid>("MatchId")
-                        .HasColumnType("TEXT");
+                    b.Property<Guid?>("MatchId")
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("PlayerOneId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("PlayerTwoId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("SubmittedBy")
                         .HasColumnType("TEXT");
 
                     b.Property<Guid?>("SupersedesEventId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -118,10 +118,10 @@ namespace PingPong.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("MatchEventId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<int>("PlayerOneScore")
                         .HasColumnType("INTEGER");
@@ -144,10 +144,10 @@ namespace PingPong.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("MatchId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<int>("PlayerOneScore")
                         .HasColumnType("INTEGER");
@@ -170,11 +170,11 @@ namespace PingPong.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasPrecision(3)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("timestamptz");
 
                     b.Property<string>("DisplayName")
                         .IsRequired()
@@ -198,7 +198,7 @@ namespace PingPong.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("AliasName")
                         .IsRequired()
@@ -211,10 +211,10 @@ namespace PingPong.Infrastructure.Migrations
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasPrecision(3)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("timestamptz");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -227,7 +227,7 @@ namespace PingPong.Infrastructure.Migrations
             modelBuilder.Entity("PingPong.Domain.Entities.PlayerRating", b =>
                 {
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<double>("CurrentRating")
                         .HasPrecision(8, 2)
@@ -235,7 +235,7 @@ namespace PingPong.Infrastructure.Migrations
 
                     b.Property<DateTimeOffset>("LastUpdatedAt")
                         .HasPrecision(3)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("timestamptz");
 
                     b.HasKey("PlayerId");
 
@@ -273,8 +273,7 @@ namespace PingPong.Infrastructure.Migrations
                     b.HasOne("PingPong.Domain.Entities.Match", "Match")
                         .WithMany("Events")
                         .HasForeignKey("MatchId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("PingPong.Domain.Entities.Player", "PlayerOne")
                         .WithMany()

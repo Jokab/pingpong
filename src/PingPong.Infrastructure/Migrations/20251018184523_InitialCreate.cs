@@ -15,10 +15,10 @@ namespace PingPong.Infrastructure.Migrations
                 name: "Players",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
                     DisplayName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
                     NormalizedName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "TEXT", precision: 3, nullable: false)
+                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamptz", precision: 3, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -29,11 +29,11 @@ namespace PingPong.Infrastructure.Migrations
                 name: "PlayerAliases",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    PlayerId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    PlayerId = table.Column<Guid>(type: "uuid", nullable: false),
                     AliasName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
                     ConfidenceScore = table.Column<double>(type: "REAL", precision: 5, scale: 4, nullable: false),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "TEXT", precision: 3, nullable: false)
+                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamptz", precision: 3, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -50,9 +50,9 @@ namespace PingPong.Infrastructure.Migrations
                 name: "PlayerRatings",
                 columns: table => new
                 {
-                    PlayerId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    PlayerId = table.Column<Guid>(type: "uuid", nullable: false),
                     CurrentRating = table.Column<double>(type: "REAL", precision: 8, scale: 2, nullable: false),
-                    LastUpdatedAt = table.Column<DateTimeOffset>(type: "TEXT", precision: 3, nullable: false)
+                    LastUpdatedAt = table.Column<DateTimeOffset>(type: "timestamptz", precision: 3, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -69,15 +69,15 @@ namespace PingPong.Infrastructure.Migrations
                 name: "Matches",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    PlayerOneId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    PlayerTwoId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    PlayerOneId = table.Column<Guid>(type: "uuid", nullable: false),
+                    PlayerTwoId = table.Column<Guid>(type: "uuid", nullable: false),
                     MatchDate = table.Column<DateTime>(type: "date", nullable: false),
                     Status = table.Column<int>(type: "INTEGER", nullable: false),
-                    PrimaryEventId = table.Column<Guid>(type: "TEXT", nullable: true),
-                    LatestEventId = table.Column<Guid>(type: "TEXT", nullable: true),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "TEXT", precision: 3, nullable: false),
-                    UpdatedAt = table.Column<DateTimeOffset>(type: "TEXT", precision: 3, nullable: false),
+                    PrimaryEventId = table.Column<Guid>(type: "uuid", nullable: true),
+                    LatestEventId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamptz", precision: 3, nullable: false),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "timestamptz", precision: 3, nullable: false),
                     PlayerOneSetsWon = table.Column<int>(type: "INTEGER", nullable: false),
                     PlayerTwoSetsWon = table.Column<int>(type: "INTEGER", nullable: false)
                 },
@@ -102,14 +102,14 @@ namespace PingPong.Infrastructure.Migrations
                 name: "MatchEvents",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    MatchId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    MatchId = table.Column<Guid>(type: "uuid", nullable: true),
                     EventType = table.Column<int>(type: "INTEGER", nullable: false),
-                    SupersedesEventId = table.Column<Guid>(type: "TEXT", nullable: true),
-                    PlayerOneId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    PlayerTwoId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    SupersedesEventId = table.Column<Guid>(type: "uuid", nullable: true),
+                    PlayerOneId = table.Column<Guid>(type: "uuid", nullable: false),
+                    PlayerTwoId = table.Column<Guid>(type: "uuid", nullable: false),
                     MatchDate = table.Column<DateTime>(type: "date", nullable: false),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "TEXT", precision: 3, nullable: false),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamptz", precision: 3, nullable: false),
                     SubmittedBy = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
@@ -125,8 +125,7 @@ namespace PingPong.Infrastructure.Migrations
                         name: "FK_MatchEvents_Matches_MatchId",
                         column: x => x.MatchId,
                         principalTable: "Matches",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_MatchEvents_Players_PlayerOneId",
                         column: x => x.PlayerOneId,
@@ -145,8 +144,8 @@ namespace PingPong.Infrastructure.Migrations
                 name: "MatchSets",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    MatchId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    MatchId = table.Column<Guid>(type: "uuid", nullable: false),
                     SetNumber = table.Column<int>(type: "INTEGER", nullable: false),
                     PlayerOneScore = table.Column<int>(type: "INTEGER", nullable: false),
                     PlayerTwoScore = table.Column<int>(type: "INTEGER", nullable: false)
@@ -166,8 +165,8 @@ namespace PingPong.Infrastructure.Migrations
                 name: "MatchEventSets",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    MatchEventId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    MatchEventId = table.Column<Guid>(type: "uuid", nullable: false),
                     SetNumber = table.Column<int>(type: "INTEGER", nullable: false),
                     PlayerOneScore = table.Column<int>(type: "INTEGER", nullable: false),
                     PlayerTwoScore = table.Column<int>(type: "INTEGER", nullable: false)

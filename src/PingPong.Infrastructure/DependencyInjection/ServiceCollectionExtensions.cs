@@ -16,24 +16,36 @@ public static class ServiceCollectionExtensions
 
         services.AddDbContext<PingPongDbContext>((serviceProvider, options) =>
         {
-            var provider = configuration["Database:Provider"] ?? "Sqlite";
-
-            if (string.Equals(provider, "SqlServer", StringComparison.OrdinalIgnoreCase))
+            // Check multiple sources for connection string:
+            // 1. ConnectionStrings:DefaultConnection (standard ASP.NET Core)
+            // 2. DATABASE_URL (fly.io convention)
+            // 3. Database:ConnectionString (legacy/custom)
+            var connectionString = configuration.GetConnectionString("DefaultConnection");
+            
+            if (string.IsNullOrWhiteSpace(connectionString))
             {
-                var connectionString = configuration.GetConnectionString("SqlServer")
-                    ?? configuration["Database:ConnectionString"]
-                    ?? throw new InvalidOperationException("SQL Server connection string is not configured.");
-
-                options.UseSqlServer(connectionString);
+                connectionString = configuration["DATABASE_URL"];
             }
-            else
+            
+            if (string.IsNullOrWhiteSpace(connectionString))
             {
-                var connectionString = configuration.GetConnectionString("Sqlite")
-                    ?? configuration["Database:ConnectionString"]
-                    ?? "Data Source=pingpong_dev.db";
-
-                options.UseSqlite(connectionString);
+                connectionString = configuration["Database:ConnectionString"];
             }
+            
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new InvalidOperationException(
+                    "PostgreSQL connection string is not configured. " +
+                    "Set ConnectionStrings:DefaultConnection, DATABASE_URL environment variable, or Database:ConnectionString.");
+            }
+
+            // Convert DATABASE_URL format (postgres://user:pass@host:port/db) to Npgsql format if needed
+            if (connectionString.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase))
+            {
+                connectionString = ConvertDatabaseUrlToConnectionString(connectionString);
+            }
+
+            options.UseNpgsql(connectionString);
         });
 
         services.AddScoped<IMatchSubmissionService, MatchSubmissionService>();
@@ -42,5 +54,37 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IHistoryService, HistoryService>();
 
         return services;
+    }
+
+    private static string ConvertDatabaseUrlToConnectionString(string databaseUrl)
+    {
+        // Parse postgres://user:password@host:port/database?params
+        var uri = new Uri(databaseUrl);
+        var userInfo = uri.UserInfo.Split(':');
+        
+        var host = uri.Host;
+        var port = uri.Port > 0 ? uri.Port : 5432;
+        var database = uri.AbsolutePath.TrimStart('/');
+        var username = userInfo.Length > 0 ? userInfo[0] : "";
+        var password = userInfo.Length > 1 ? userInfo[1] : "";
+
+        // Parse query parameters for SSL mode
+        var sslMode = "Require";
+        if (!string.IsNullOrEmpty(uri.Query))
+        {
+            var queryParams = System.Web.HttpUtility.ParseQueryString(uri.Query);
+            if (queryParams["sslmode"] != null)
+            {
+                sslMode = queryParams["sslmode"] switch
+                {
+                    "disable" => "Disable",
+                    "require" => "Require",
+                    "prefer" => "Prefer",
+                    _ => "Require"
+                };
+            }
+        }
+
+        return $"Host={host};Port={port};Database={database};Username={username};Password={password};SSL Mode={sslMode}";
     }
 }

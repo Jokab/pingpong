@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 using PingPong.Api.Components;
 using PingPong.Api.Contracts;
@@ -30,13 +31,11 @@ app.UseHttpsRedirection();
 
 app.UseAntiforgery();
 
-// Apply migrations automatically in development to keep local DB up-to-date
-if (app.Environment.IsDevelopment())
+// Apply migrations automatically
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<PingPong.Infrastructure.Persistence.PingPongDbContext>();
-    // EnsureCreated for now; will move to Migrate after adding Microsoft.EntityFrameworkCore.Design reference at runtime app if needed
-    db.Database.EnsureCreated();
+    db.Database.Migrate();
 }
 
 app.MapStaticAssets();
