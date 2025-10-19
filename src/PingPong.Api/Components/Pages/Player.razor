@@ -1,6 +1,7 @@
 @page "/players/{id:guid}"
 @rendermode RenderMode.InteractiveServer
 @inject IStandingsService StandingsService
+@inject IHistoryService HistoryService
 
 <PageTitle>@(_row is null ? "Spelare" : _row.PlayerName)</PageTitle>
 
@@ -24,42 +25,58 @@
                     <MudText Typo="Typo.h4" Class="font-weight-semibold">@_row.PlayerName</MudText>
                 </MudStack>
 
-                <MudGrid Spacing="2">
-                    <MudItem xs="6" sm="4" md="2">
-                        <MudPaper Class="pa-3" Elevation="0">
-                            <MudText Typo="Typo.caption" Color="Color.Secondary">Matcher</MudText>
-                            <MudText Typo="Typo.h5">@_row.MatchesPlayed</MudText>
-                        </MudPaper>
-                    </MudItem>
-                    <MudItem xs="6" sm="4" md="2">
-                        <MudPaper Class="pa-3" Elevation="0">
-                            <MudText Typo="Typo.caption" Color="Color.Secondary">Vinster</MudText>
-                            <MudText Typo="Typo.h5">@_row.Wins</MudText>
-                        </MudPaper>
-                    </MudItem>
-                    <MudItem xs="6" sm="4" md="2">
-                        <MudPaper Class="pa-3" Elevation="0">
-                            <MudText Typo="Typo.caption" Color="Color.Secondary">Förluster</MudText>
-                            <MudText Typo="Typo.h5">@_row.Losses</MudText>
-                        </MudPaper>
-                    </MudItem>
-                    <MudItem xs="6" sm="4" md="2">
-                        <MudPaper Class="pa-3" Elevation="0">
-                            <MudText Typo="Typo.caption" Color="Color.Secondary">Vinst %</MudText>
-                            <MudText Typo="Typo.h5">@_row.WinPercentage.ToString("P0")</MudText>
-                        </MudPaper>
-                    </MudItem>
-                    <MudItem xs="6" sm="4" md="2">
-                        <MudPaper Class="pa-3" Elevation="0">
-                            <MudText Typo="Typo.caption" Color="Color.Secondary">Ranking</MudText>
-                            <MudText Typo="Typo.h5">@_row.CurrentRating.ToString("F0")</MudText>
-                        </MudPaper>
-                    </MudItem>
-                </MudGrid>
+                <MudTable T="StandingRow" Items="SingleRow" Dense="true" Hover="false" Bordered="true" Elevation="0" Class="stats-table">
+                    <HeaderContent>
+                        <MudTh class="text-center">Matcher</MudTh>
+                        <MudTh class="text-center">Vinster</MudTh>
+                        <MudTh class="text-center">Förluster</MudTh>
+                        <MudTh class="text-center">Vinst %</MudTh>
+                        <MudTh class="text-center">Ranking</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Matcher" Class="text-center">@context.MatchesPlayed</MudTd>
+                        <MudTd DataLabel="Vinster" Class="text-center">@context.Wins</MudTd>
+                        <MudTd DataLabel="Förluster" Class="text-center">@context.Losses</MudTd>
+                        <MudTd DataLabel="Vinst %" Class="text-center">@context.WinPercentage.ToString("P0")</MudTd>
+                        <MudTd DataLabel="Ranking" Class="text-center">@context.CurrentRating.ToString("F0")</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudStack>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudStack Spacing="2">
+                <MudText Typo="Typo.h5" Class="font-weight-semibold">Senaste matcher</MudText>
+                
+                <MudTable T="MatchHistoryEntry" Items="_recentMatches" Dense="true" Hover="true" Elevation="0" Bordered="true" Class="matches-table">
+                    <HeaderContent>
+                        <MudTh>Datum</MudTh>
+                        <MudTh>Match</MudTh>
+                        <MudTh>Set</MudTh>
+                        <MudTh class="text-center">Utfall</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Datum">@context.MatchDate.ToString("yyyy-MM-dd")</MudTd>
+                        <MudTd DataLabel="Match">@context.PlayerOneName mot @context.PlayerTwoName</MudTd>
+                        <MudTd DataLabel="Set">@string.Join(", ", context.Sets.Select(s => $"{s.PlayerOneScore}-{s.PlayerTwoScore}"))</MudTd>
+                        <MudTd DataLabel="Utfall" Class="text-center">
+                            @if (context.WinnerPlayerId == Id)
+                            {
+                                <MudChip T="string" Color="Color.Success" Size="Size.Small">Vinst</MudChip>
+                            }
+                            else
+                            {
+                                <MudChip T="string" Color="Color.Error" Size="Size.Small">Förlust</MudChip>
+                            }
+                        </MudTd>
+                    </RowTemplate>
+                    <NoRecordsContent>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">Inga matcher registrerade ännu.</MudText>
+                    </NoRecordsContent>
+                </MudTable>
             </MudStack>
         </MudPaper>
         
-        <HeadToHeadPanel PlayerId="Id" />
     }
 </MudStack>
 
@@ -67,6 +84,8 @@
     [Parameter] public Guid Id { get; set; }
 
     private StandingRow? _row;
+    private IEnumerable<StandingRow> SingleRow => _row is null ? Array.Empty<StandingRow>() : new[] { _row };
+    private readonly List<MatchHistoryEntry> _recentMatches = new();
     private bool _isLoading;
     private string? _errorMessage;
 
@@ -93,6 +112,13 @@
             if (_row is null)
             {
                 _errorMessage = "Kunde inte hitta spelaren.";
+            }
+            else
+            {
+                // Load recent matches for this player
+                var (matches, _) = await HistoryService.GetHistoryAsync(1, 10, Id);
+                _recentMatches.Clear();
+                _recentMatches.AddRange(matches);
             }
         }
         catch (Exception ex)
