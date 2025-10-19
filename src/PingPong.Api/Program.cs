@@ -6,6 +6,7 @@ using PingPong.Application.Interfaces;
 using PingPong.Application.Models;
 using PingPong.Domain.Exceptions;
 using PingPong.Infrastructure.DependencyInjection;
+using PingPong.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +22,33 @@ builder.Services.AddScoped(sp =>
 });
 
 var app = builder.Build();
+
+// Seed command: supports --seed-data [--seed <int>] [--reseed]
+if (args.Contains("--seed-data", StringComparer.OrdinalIgnoreCase))
+{
+    using var scope = app.Services.CreateScope();
+    var seeder = scope.ServiceProvider.GetRequiredService<DevDataSeeder>();
+    var db = scope.ServiceProvider.GetRequiredService<PingPong.Infrastructure.Persistence.PingPongDbContext>();
+    db.Database.Migrate();
+
+    int? seedValue = null;
+    var reseed = false;
+    for (var i = 0; i < args.Length; i++)
+    {
+        if (string.Equals(args[i], "--seed", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length && int.TryParse(args[i + 1], out var parsed))
+        {
+            seedValue = parsed;
+            i++;
+        }
+        else if (string.Equals(args[i], "--reseed", StringComparison.OrdinalIgnoreCase))
+        {
+            reseed = true;
+        }
+    }
+
+    await seeder.SeedAsync(seedValue, reseed);
+    return;
+}
 
 if (!app.Environment.IsDevelopment())
 {
