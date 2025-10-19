@@ -1,0 +1,139 @@
+@page "/players/{id:guid}"
+@rendermode RenderMode.InteractiveServer
+@inject IStandingsService StandingsService
+
+<PageTitle>@(_row is null ? "Spelare" : _row.PlayerName)</PageTitle>
+
+<MudStack Spacing="3">
+    @if (_isLoading)
+    {
+        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="ma-6">
+            <MudProgressCircular Indeterminate="true" Size="Size.Large" />
+        </MudStack>
+    }
+    else if (!string.IsNullOrWhiteSpace(_errorMessage))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@_errorMessage</MudAlert>
+    }
+    else if (_row is not null)
+    {
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudStack Spacing="2">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudAvatar Size="Size.Large" Color="Color.Primary" Variant="Variant.Filled">@BuildInitials(_row.PlayerName)</MudAvatar>
+                    <MudText Typo="Typo.h4" Class="font-weight-semibold">@_row.PlayerName</MudText>
+                </MudStack>
+
+                <MudGrid Spacing="2">
+                    <MudItem xs="6" sm="4" md="2">
+                        <MudPaper Class="pa-3" Elevation="0">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Matcher</MudText>
+                            <MudText Typo="Typo.h5">@_row.MatchesPlayed</MudText>
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="6" sm="4" md="2">
+                        <MudPaper Class="pa-3" Elevation="0">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Vinster</MudText>
+                            <MudText Typo="Typo.h5">@_row.Wins</MudText>
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="6" sm="4" md="2">
+                        <MudPaper Class="pa-3" Elevation="0">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Förluster</MudText>
+                            <MudText Typo="Typo.h5">@_row.Losses</MudText>
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="6" sm="4" md="2">
+                        <MudPaper Class="pa-3" Elevation="0">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Vinst %</MudText>
+                            <MudText Typo="Typo.h5">@_row.WinPercentage.ToString("P0")</MudText>
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="6" sm="4" md="2">
+                        <MudPaper Class="pa-3" Elevation="0">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Ranking</MudText>
+                            <MudText Typo="Typo.h5">@_row.CurrentRating.ToString("F0")</MudText>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+            </MudStack>
+        </MudPaper>
+    }
+</MudStack>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private StandingRow? _row;
+    private bool _isLoading;
+    private string? _errorMessage;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        if (_isLoading)
+        {
+            return;
+        }
+
+        _errorMessage = null;
+        _isLoading = true;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            var list = await StandingsService.GetStandingsAsync();
+            _row = list.FirstOrDefault(x => x.PlayerId == Id);
+            if (_row is null)
+            {
+                _errorMessage = "Kunde inte hitta spelaren.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Kunde inte ladda spelarstatistik: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private static string BuildInitials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return "?";
+        }
+
+        var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        switch (parts.Length)
+        {
+            case 0:
+                return "?";
+            case 1:
+            {
+                var segment = parts[0];
+                return segment.Length switch
+                {
+                    0 => "?",
+                    1 => segment.ToUpperInvariant(),
+                    _ => string.Concat(char.ToUpperInvariant(segment[0]), char.ToUpperInvariant(segment[1]))
+                };
+            }
+            default:
+            {
+                var initials = string.Concat(parts.Take(2).Select(p => char.ToUpperInvariant(p[0])));
+                return initials.Length == 0 ? "?" : initials;
+            }
+        }
+
+    }
+}
+
+

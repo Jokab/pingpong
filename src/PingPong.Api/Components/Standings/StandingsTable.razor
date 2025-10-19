@@ -40,7 +40,9 @@
                         <MudAvatar Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled">
                             @context.Initials
                         </MudAvatar>
-                        <MudText>@context.Name</MudText>
+                        <MudLink Href="@($"/players/{context.PlayerId}")" Underline="Underline.None">
+                            <MudText Color="Color.Primary">@context.Name</MudText>
+                        </MudLink>
                     </MudStack>
                 </MudTd>
                 <MudTd DataLabel="Matcher" Class="text-center">@context.MatchesPlayed</MudTd>
