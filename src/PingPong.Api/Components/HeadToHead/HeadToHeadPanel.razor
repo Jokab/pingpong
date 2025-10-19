@@ -1,0 +1,188 @@
+@using System.Globalization
+@inject IHeadToHeadService HeadToHeadService
+@inject IPlayerDirectory PlayerDirectory
+
+<MudPaper Elevation="1" Class="pa-4 mt-4">
+    <MudStack Spacing="3">
+        <MudText Typo="Typo.h5" Class="font-weight-semibold">Inbördes möten</MudText>
+
+        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+            <MudAutocomplete T="PlayerSearchResult"
+                              Label="Välj motståndare"
+                              ResetValueOnEmptyText="true"
+                              
+                              Clearable="true"
+                              Value="@_selectedOpponent"
+                              ValueChanged="OnOpponentChanged"
+                              ToStringFunc="@(p => p?.DisplayName ?? string.Empty)"
+                              SearchFunc="SearchPlayers"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.PersonSearch"
+                              Class="w-50" />
+
+            <MudButtonGroup Color="Color.Default" Variant="Variant.Filled" Size="Size.Small">
+                <MudButton OnClick="() => SetPreset(null, null)">Alla</MudButton>
+                <MudButton OnClick="() => SetPreset(DateOnly.FromDateTime(DateTime.Today.AddDays(-30)), DateOnly.FromDateTime(DateTime.Today))">30d</MudButton>
+                <MudButton OnClick="() => SetPreset(DateOnly.FromDateTime(DateTime.Today.AddDays(-90)), DateOnly.FromDateTime(DateTime.Today))">90d</MudButton>
+                <MudButton OnClick="() => SetPreset(DateOnly.FromDateTime(DateTime.Today.AddYears(-1)), DateOnly.FromDateTime(DateTime.Today))">1y</MudButton>
+            </MudButtonGroup>
+
+            <MudDateRangePicker DateRange="@_dateRange"
+                                DateRangeChanged="OnDateRangeChanged"
+                                PickerVariant="PickerVariant.Inline"
+                                DisplayMonths="2"
+                                Class="ml-2" />
+        </MudStack>
+
+        @if (_isLoading)
+        {
+            <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="ma-4">
+                <MudProgressCircular Indeterminate="true" />
+            </MudStack>
+        }
+        else if (!string.IsNullOrWhiteSpace(_errorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true">@_errorMessage</MudAlert>
+        }
+        else if (_details is not null)
+        {
+            <MudGrid Spacing="2">
+                <MudItem xs="6" sm="4" md="2">
+                    <MudPaper Class="pa-3" Elevation="0">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Matcher</MudText>
+                        <MudText Typo="Typo.h5">@_details.MatchesPlayed</MudText>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="6" sm="4" md="2">
+                    <MudPaper Class="pa-3" Elevation="0">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Vinster</MudText>
+                        <MudText Typo="Typo.h5">@_details.Wins</MudText>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="6" sm="4" md="2">
+                    <MudPaper Class="pa-3" Elevation="0">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Förluster</MudText>
+                        <MudText Typo="Typo.h5">@_details.Losses</MudText>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="6" sm="4" md="2">
+                    <MudPaper Class="pa-3" Elevation="0">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Vinst %</MudText>
+                        <MudText Typo="Typo.h5">@_details.WinPercentage.ToString("P0")</MudText>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="6" sm="4" md="2">
+                    <MudPaper Class="pa-3" Elevation="0">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Set (W-L)</MudText>
+                        <MudText Typo="Typo.h5">@_details.SetsWon-@_details.SetsLost</MudText>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="6" sm="4" md="2">
+                    <MudPaper Class="pa-3" Elevation="0">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Snitt poängdiff</MudText>
+                        <MudText Typo="Typo.h5">@_details.AveragePointDifferential.ToString("F1")</MudText>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+
+            
+
+            <MudStack Spacing="2" Class="mt-2">
+                <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Senaste matcher</MudText>
+                <MudTable Items="@_details.RecentMatches" Dense="true" Hover="true">
+                    <HeaderContent>
+                        <MudTh>Datum</MudTh>
+                        <MudTh>Set</MudTh>
+                        <MudTh>Vinnare</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.MatchDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)</MudTd>
+                        <MudTd>
+                            @string.Join(", ", context.Sets.Select(s => $"{s.PlayerOneScore}-{s.PlayerTwoScore}"))
+                        </MudTd>
+                        <MudTd>@(context.WinnerPlayerId.HasValue ? (context.WinnerPlayerId.Value == PlayerId ? _details.PlayerAName : _details.PlayerBName) : null)</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudStack>
+        }
+        else
+        {
+            <MudText Color="Color.Secondary">Välj en motståndare för att se inbördes statistik.</MudText>
+        }
+    </MudStack>
+</MudPaper>
+
+@code {
+    [Parameter] public Guid PlayerId { get; set; }
+
+    private PlayerSearchResult? _selectedOpponent;
+    private DateRange _dateRange = new(null, null);
+    private HeadToHeadDetails? _details;
+    private bool _isLoading;
+    private string? _errorMessage;
+
+    
+
+    private async Task<IEnumerable<PlayerSearchResult>> SearchPlayers(string value, CancellationToken _)
+    {
+        var results = await PlayerDirectory.SearchAsync(value ?? string.Empty, 10, default);
+        return results.Where(r => r.PlayerId != PlayerId);
+    }
+
+    private async Task OnOpponentChanged(PlayerSearchResult? opponent)
+    {
+        _selectedOpponent = opponent;
+        await LoadAsync();
+    }
+
+    private void SetPreset(DateOnly? from, DateOnly? to)
+    {
+        _dateRange = new DateRange(from?.ToDateTime(TimeOnly.MinValue), to?.ToDateTime(TimeOnly.MinValue));
+        _ = LoadAsync();
+    }
+
+    private async Task OnDateRangeChanged(DateRange range)
+    {
+        _dateRange = range;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        if (_isLoading) return;
+        _errorMessage = null;
+
+        if (_selectedOpponent is null)
+        {
+            _details = null;
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        _isLoading = true;
+        await InvokeAsync(StateHasChanged);
+
+        DateOnly? from = null;
+        DateOnly? to = null;
+        if (_dateRange.Start is DateTime s) from = DateOnly.FromDateTime(s);
+        if (_dateRange.End is DateTime e) to = DateOnly.FromDateTime(e);
+
+        try
+        {
+            _details = await HeadToHeadService.GetHeadToHeadDetailsAsync(PlayerId, _selectedOpponent.PlayerId, from, to);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Kunde inte ladda H2H: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    
+}
+
+

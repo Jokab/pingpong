@@ -52,6 +52,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IStandingsService, StandingsService>();
         services.AddScoped<IPlayerDirectory, PlayerDirectory>();
         services.AddScoped<IHistoryService, HistoryService>();
+        services.AddScoped<IHeadToHeadService, HeadToHeadService>();
 
         return services;
     }
