@@ -3,7 +3,6 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PingPong.Infrastructure.Persistence;
 
 #nullable disable
@@ -16,11 +15,7 @@ namespace PingPong.Infrastructure.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.0-rc.2.25502.107")
-                .HasAnnotation("Relational:MaxIdentifierLength", 63);
-
-            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.9");
 
             modelBuilder.Entity("PingPong.Domain.Entities.Match", b =>
                 {
@@ -42,19 +37,19 @@ namespace PingPong.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<int>("PlayerOneSetsWon")
-                        .HasColumnType("integer");
+                        .HasColumnType("INTEGER");
 
                     b.Property<Guid>("PlayerTwoId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("PlayerTwoSetsWon")
-                        .HasColumnType("integer");
+                        .HasColumnType("INTEGER");
 
                     b.Property<Guid?>("PrimaryEventId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("Status")
-                        .HasColumnType("integer");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasPrecision(3)
@@ -83,7 +78,7 @@ namespace PingPong.Infrastructure.Migrations
                         .HasColumnType("timestamptz");
 
                     b.Property<int>("EventType")
-                        .HasColumnType("integer");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("MatchDate")
                         .HasColumnType("date");
@@ -98,7 +93,7 @@ namespace PingPong.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("SubmittedBy")
-                        .HasColumnType("text");
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid?>("SupersedesEventId")
                         .HasColumnType("uuid");
@@ -126,13 +121,13 @@ namespace PingPong.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<int>("PlayerOneScore")
-                        .HasColumnType("integer");
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("PlayerTwoScore")
-                        .HasColumnType("integer");
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("SetNumber")
-                        .HasColumnType("integer");
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
@@ -152,13 +147,13 @@ namespace PingPong.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<int>("PlayerOneScore")
-                        .HasColumnType("integer");
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("PlayerTwoScore")
-                        .HasColumnType("integer");
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("SetNumber")
-                        .HasColumnType("integer");
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
@@ -181,12 +176,12 @@ namespace PingPong.Infrastructure.Migrations
                     b.Property<string>("DisplayName")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("NormalizedName")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
@@ -205,11 +200,11 @@ namespace PingPong.Infrastructure.Migrations
                     b.Property<string>("AliasName")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("TEXT");
 
                     b.Property<double>("ConfidenceScore")
                         .HasPrecision(5, 4)
-                        .HasColumnType("double precision");
+                        .HasColumnType("REAL");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasPrecision(3)
@@ -233,7 +228,7 @@ namespace PingPong.Infrastructure.Migrations
 
                     b.Property<double>("CurrentRating")
                         .HasPrecision(8, 2)
-                        .HasColumnType("double precision");
+                        .HasColumnType("REAL");
 
                     b.Property<DateTimeOffset>("LastUpdatedAt")
                         .HasPrecision(3)
