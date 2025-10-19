@@ -1,6 +1,8 @@
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using PingPong.Application.Interfaces;
 using PingPong.Infrastructure.Persistence;
 using PingPong.Infrastructure.Services;
@@ -16,26 +18,42 @@ public static class ServiceCollectionExtensions
 
         services.AddDbContext<PingPongDbContext>((serviceProvider, options) =>
         {
+            var env = serviceProvider.GetRequiredService<IHostEnvironment>();
+            var isTesting = env.IsEnvironment("Testing");
+
+            // In tests, prefer SQLite. If a shared SqliteConnection is registered, use it to keep the in-memory DB alive.
+            if (isTesting)
+            {
+                var sqliteConnection = serviceProvider.GetService<SqliteConnection>();
+                if (sqliteConnection is not null)
+                {
+                    options.UseSqlite(sqliteConnection);
+                }
+                else
+                {
+                    options.UseSqlite("Data Source=:memory:");
+                }
+                return;
+            }
+
+            // Production/dev: PostgreSQL
             // Check multiple sources for connection string:
             // 1. ConnectionStrings:DefaultConnection (standard ASP.NET Core)
             // 2. DATABASE_URL (fly.io convention)
             // 3. Database:ConnectionString (legacy/custom)
             var connectionString = configuration.GetConnectionString("DefaultConnection");
-            
             if (string.IsNullOrWhiteSpace(connectionString))
             {
                 connectionString = configuration["DATABASE_URL"];
             }
-            
             if (string.IsNullOrWhiteSpace(connectionString))
             {
                 connectionString = configuration["Database:ConnectionString"];
             }
-            
             if (string.IsNullOrWhiteSpace(connectionString))
             {
                 throw new InvalidOperationException(
-                    "PostgreSQL connection string is not configured. " +
+                    "Database connection string is not configured. " +
                     "Set ConnectionStrings:DefaultConnection, DATABASE_URL environment variable, or Database:ConnectionString.");
             }
 

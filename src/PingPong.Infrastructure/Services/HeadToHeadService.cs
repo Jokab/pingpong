@@ -17,16 +17,21 @@ public sealed class HeadToHeadService : IHeadToHeadService
     public async Task<IReadOnlyList<HeadToHeadRow>> GetHeadToHeadAsync(Guid playerId, CancellationToken cancellationToken = default)
     {
         // Load all events that involve the player, including players and sets
+        // Note: We filter in the database but order in memory to support SQLite (DateTimeOffset ordering)
         var events = await _context.MatchEvents
             .AsNoTracking()
             .Include(e => e.PlayerOne)
             .Include(e => e.PlayerTwo)
             .Include(e => e.Sets)
             .Where(e => e.PlayerOneId == playerId || e.PlayerTwoId == playerId)
+            .ToListAsync(cancellationToken);
+
+        // Order in memory for SQLite compatibility
+        events = events
             .OrderBy(e => e.MatchDate)
             .ThenBy(e => e.CreatedAt)
             .ThenBy(e => e.Id)
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         if (events.Count == 0)
         {
@@ -132,11 +137,13 @@ public sealed class HeadToHeadService : IHeadToHeadService
             query = query.Where(e => e.MatchDate <= to.Value);
         }
 
-        var events = await query
+        // Load into memory first, then order for SQLite compatibility (DateTimeOffset ordering)
+        var events = await query.ToListAsync(cancellationToken);
+        events = events
             .OrderBy(e => e.MatchDate)
             .ThenBy(e => e.CreatedAt)
             .ThenBy(e => e.Id)
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         if (events.Count == 0)
         {

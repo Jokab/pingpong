@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using MudBlazor.Services;
 using PingPong.Api.Components;
 using PingPong.Api.Contracts;
@@ -59,11 +60,21 @@ app.UseHttpsRedirection();
 
 app.UseAntiforgery();
 
-// Apply migrations automatically
+// Initialize database
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<PingPong.Infrastructure.Persistence.PingPongDbContext>();
-    db.Database.Migrate();
+    var env = scope.ServiceProvider.GetRequiredService<IHostEnvironment>();
+    if (env.IsEnvironment("Testing"))
+    {
+        // For SQLite in tests
+        db.Database.EnsureCreated();
+    }
+    else
+    {
+        // For PostgreSQL in dev/prod
+        db.Database.Migrate();
+    }
 }
 
 app.MapStaticAssets();
