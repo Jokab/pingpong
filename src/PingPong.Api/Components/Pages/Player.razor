@@ -120,7 +120,7 @@
                 // Load recent matches for this player
                 var (matches, _) = await HistoryService.GetHistoryAsync(1, 10, Id);
                 _recentMatches.Clear();
-                _recentMatches.AddRange(matches);
+                _recentMatches.AddRange(matches.OrderByDescending(m => m.MatchDate).ThenByDescending(m => m.CreatedAt));
             }
         }
         catch (Exception ex)
