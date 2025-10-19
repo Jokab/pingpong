@@ -6,11 +6,12 @@
 <MudPopoverProvider />
 
 <MudLayout>
-    <MudAppBar Elevation="0" Color="Color.Primary">
-        <MudText Typo="Typo.h6" Class="font-weight-bold">Pingisresultat</MudText>
-        <MudSpacer />
+    <MudDrawer Open="true" Elevation="1" Variant="DrawerVariant.Persistent" Color="Color.Primary">
+        <MudDrawerHeader>
+            <MudText Typo="Typo.h6" Class="font-weight-bold">Pingisresultat</MudText>
+        </MudDrawerHeader>
         <NavMenu />
-    </MudAppBar>
+    </MudDrawer>
 
     <MudMainContent>
         <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="py-6">
