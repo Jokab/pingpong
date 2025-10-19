@@ -53,13 +53,13 @@
                         <MudTh>Datum</MudTh>
                         <MudTh>Match</MudTh>
                         <MudTh>Set</MudTh>
-                        <MudTh class="text-center">Utfall</MudTh>
+                        <MudTh class="text-center">Resultat</MudTh>
                     </HeaderContent>
                     <RowTemplate>
                         <MudTd DataLabel="Datum">@context.MatchDate.ToString("yyyy-MM-dd")</MudTd>
                         <MudTd DataLabel="Match">@context.PlayerOneName mot @context.PlayerTwoName</MudTd>
                         <MudTd DataLabel="Set">@string.Join(", ", context.Sets.Select(s => $"{s.PlayerOneScore}-{s.PlayerTwoScore}"))</MudTd>
-                        <MudTd DataLabel="Utfall" Class="text-center">
+                        <MudTd DataLabel="Resultat" Class="text-center">
                             @if (context.WinnerPlayerId == Id)
                             {
                                 <MudChip T="string" Color="Color.Success" Size="Size.Small">Vinst</MudChip>
