@@ -71,6 +71,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPlayerDirectory, PlayerDirectory>();
         services.AddScoped<IHistoryService, HistoryService>();
         services.AddScoped<IHeadToHeadService, HeadToHeadService>();
+        services.AddScoped<IRatingService, EloRatingService>();
         services.AddScoped<DevDataSeeder>();
 
         return services;

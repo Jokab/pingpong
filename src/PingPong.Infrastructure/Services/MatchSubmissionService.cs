@@ -11,11 +11,13 @@ public sealed class MatchSubmissionService : IMatchSubmissionService
 {
     private readonly PingPongDbContext _context;
     private readonly IPlayerDirectory _playerDirectory;
+    private readonly IRatingService _ratingService;
 
-    public MatchSubmissionService(PingPongDbContext context, IPlayerDirectory playerDirectory)
+    public MatchSubmissionService(PingPongDbContext context, IPlayerDirectory playerDirectory, IRatingService ratingService)
     {
         _context = context;
         _playerDirectory = playerDirectory;
+        _ratingService = ratingService;
     }
 
     public async Task<MatchSubmissionResult> SubmitMatchAsync(MatchSubmissionRequest request, CancellationToken cancellationToken = default)
@@ -88,8 +90,11 @@ public sealed class MatchSubmissionService : IMatchSubmissionService
 
         // Ensure EF doesn't enforce FK to a Match row: explicit null for navigation and default MatchId
         matchEvent.MatchId = matchEvent.MatchId; // keep as default
-        await _context.MatchEvents.AddAsync(matchEvent, cancellationToken);
+        _context.MatchEvents.Add(matchEvent);
         await _context.SaveChangesAsync(cancellationToken);
+
+        // Rebuild ratings to reflect the new event
+        await _ratingService.RebuildAllRatingsAsync(cancellationToken);
 
         return new MatchSubmissionResult(Guid.Empty, matchEvent.Id);
     }
