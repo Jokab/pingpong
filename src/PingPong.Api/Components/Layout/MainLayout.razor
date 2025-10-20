@@ -6,7 +6,12 @@
 <MudPopoverProvider />
 
 <MudLayout>
-    <MudDrawer Open="true" Elevation="1" Variant="DrawerVariant.Persistent" Color="Color.Primary">
+    <MudAppBar Elevation="1">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
+        <MudText Typo="Typo.h6" Class="ml-3">Pingisresultat</MudText>
+    </MudAppBar>
+    
+    <MudDrawer @bind-Open="_drawerOpen" Elevation="1" Variant="@DrawerVariant.Responsive" Color="Color.Primary" Breakpoint="Breakpoint.Md">
         <MudDrawerHeader>
             <MudText Typo="Typo.h6" Class="font-weight-bold">Pingisresultat</MudText>
         </MudDrawerHeader>
@@ -25,3 +30,12 @@
     <a href="." class="reload">Ladda om</a>
     <span class="dismiss">🗙</span>
 </div>
+
+@code {
+    private bool _drawerOpen = true;
+
+    private void ToggleDrawer()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+}
