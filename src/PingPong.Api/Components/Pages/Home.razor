@@ -4,10 +4,6 @@
 <PageTitle>Resultattavla</PageTitle>
 
 <MudStack Spacing="3">
-    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-        <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Registrera en match, uppdatera tabellen.</MudText>
-    </MudStack>
-
     <MudGrid Spacing="3">
         <MudItem xs="12" md="5" lg="4">
             <MatchSubmissionForm OnSubmitted="RefreshStandingsAsync" />
