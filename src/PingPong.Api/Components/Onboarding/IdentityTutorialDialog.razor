@@ -1,0 +1,56 @@
+@inherits ComponentBase
+@inject UserIdentityService IdentityService
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="2">
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                För att göra det enklare att registrera matcher kan du välja vilken spelare du är. 
+                Då fylls ditt namn automatiskt i när du registrerar resultat. Du kan alltid ändra vem du är via menyn högst upp.
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                <strong>OBS:</strong> Se till att bara en person registrerar varje match för att undvika dubletter. 
+            </MudText>
+
+            <MudTextField @bind-Value="_name" Label="Ange ditt namn" Immediate="true" />
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="Skip">Hoppa över</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Save" Disabled="string.IsNullOrWhiteSpace(_name)">Spara</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    public IMudDialogInstance? MudDialog { get; set; }
+
+    private string _name = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var existingName = await IdentityService.GetIdentityNameAsync();
+        if (!string.IsNullOrWhiteSpace(existingName))
+        {
+            _name = existingName;
+        }
+    }
+
+    private async Task Save()
+    {
+        if (string.IsNullOrWhiteSpace(_name))
+            return;
+
+        await IdentityService.SetIdentityNameAsync(_name.Trim());
+        await IdentityService.SetTutorialSeenAsync();
+        MudDialog?.Close();
+    }
+
+    private async Task Skip()
+    {
+        await IdentityService.SetTutorialSeenAsync();
+        MudDialog?.Close();
+    }
+}
+
+

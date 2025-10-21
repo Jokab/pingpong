@@ -98,6 +98,8 @@
     </MudStack>
 </MudPaper>
 
+@implements IDisposable
+
 @code {
     [Parameter]
     public EventCallback OnSubmitted { get; set; }
@@ -108,14 +110,18 @@
     [Inject]
     private ISnackbar Snackbar { get; set; } = default!;
 
+    [Inject]
+    private UserIdentityService IdentityService { get; set; } = default!;
+
     private string? _lastQuery;
     private double _lastTopScore;
 
     private readonly MatchSubmissionDraft _model = new();
     private bool _isSubmitting;
     private string? _error;
+    private bool _hasPrefilledIdentity;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         if (_model.Sets.Count == 0)
         {
@@ -124,6 +130,44 @@
                 AddSet();
             }
         }
+        
+        // Förifyll spelare ett med identitet från localStorage
+        await LoadIdentityAsync();
+        
+        // Subscribe to identity changes
+        IdentityService.IdentityChanged += OnIdentityChanged;
+    }
+
+    private async Task LoadIdentityAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_model.PlayerOne) && !_hasPrefilledIdentity)
+        {
+            var identityName = await IdentityService.GetIdentityNameAsync();
+            if (!string.IsNullOrWhiteSpace(identityName))
+            {
+                _model.PlayerOne = identityName;
+                _hasPrefilledIdentity = true;
+            }
+        }
+    }
+
+    private async void OnIdentityChanged(object? sender, EventArgs e)
+    {
+        // Only update if user hasn't manually changed PlayerOne
+        if (_hasPrefilledIdentity && string.IsNullOrWhiteSpace(_model.PlayerOne))
+        {
+            var identityName = await IdentityService.GetIdentityNameAsync();
+            if (!string.IsNullOrWhiteSpace(identityName))
+            {
+                _model.PlayerOne = identityName;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        IdentityService.IdentityChanged -= OnIdentityChanged;
     }
 
     private async Task<IEnumerable<string?>> SearchPlayersAsync(string value, CancellationToken cancellationToken)
@@ -266,8 +310,23 @@
 
     private async Task OnPlayerSelected(string? selection, bool isPlayerOne)
     {
-        if (string.IsNullOrWhiteSpace(selection)) return;
+        // Handle clearing
+        if (string.IsNullOrWhiteSpace(selection))
+        {
+            if (isPlayerOne)
+            {
+                _model.PlayerOne = null;
+                _hasPrefilledIdentity = false; // User intentionally cleared, don't auto-refill
+            }
+            else
+            {
+                _model.PlayerTwo = null;
+            }
+            return;
+        }
+        
         if (selection.Trim().Length == 0) return; // ignore placeholder
+        
         // Detect synthetic add item
         if (selection.StartsWith("Lägg till '") && selection.EndsWith("'", StringComparison.Ordinal))
         {

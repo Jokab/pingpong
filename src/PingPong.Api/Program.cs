@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using MudBlazor.Services;
 using PingPong.Api.Components;
 using PingPong.Api.Contracts;
+using PingPong.Api.Services;
 using PingPong.Application.Interfaces;
 using PingPong.Application.Models;
 using PingPong.Domain.Exceptions;
@@ -16,6 +17,7 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddMudServices();
+builder.Services.AddScoped<UserIdentityService>();
 builder.Services.AddScoped(sp =>
 {
     var navigation = sp.GetRequiredService<Microsoft.AspNetCore.Components.NavigationManager>();

@@ -1,4 +1,6 @@
 @inherits LayoutComponentBase
+@inject IDialogService Dialog
+@inject UserIdentityService IdentityService
 
 <MudThemeProvider />
 <MudDialogProvider />
@@ -9,6 +11,25 @@
     <MudAppBar Elevation="1">
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
         <MudText Typo="Typo.h6" Class="ml-3">Pingisresultat</MudText>
+        <MudSpacer />
+        <MudMenu AnchorOrigin="Origin.TopRight" TransformOrigin="Origin.TopRight">
+            <ActivatorContent>
+                <MudIconButton Icon="@Icons.Material.Filled.Person" Color="Color.Inherit" />
+            </ActivatorContent>
+            <ChildContent>
+                @if (!string.IsNullOrWhiteSpace(_identityName))
+                {
+                    <MudText Class="px-4 py-2" Typo="Typo.body2">Din spelare: <strong>@_identityName</strong></MudText>
+                }
+                else
+                {
+                    <MudText Class="px-4 py-2" Typo="Typo.body2" Color="Color.Secondary">Ingen spelare vald</MudText>
+                }
+                <MudDivider />
+                <MudMenuItem OnClick="@OpenIdentityDialog">Byt spelare…</MudMenuItem>
+                <MudMenuItem OnClick="@ForgetIdentity" Disabled="string.IsNullOrWhiteSpace(_identityName)">Glöm val</MudMenuItem>
+            </ChildContent>
+        </MudMenu>
     </MudAppBar>
     
     <MudDrawer @bind-Open="_drawerOpen" Elevation="1" Variant="@DrawerVariant.Responsive" Color="Color.Primary" Breakpoint="Breakpoint.Md">
@@ -33,9 +54,50 @@
 
 @code {
     private bool _drawerOpen = true;
+    private string? _identityName;
 
     private void ToggleDrawer()
     {
         _drawerOpen = !_drawerOpen;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadIdentityAsync();
+            
+            var tutorialSeen = await IdentityService.GetTutorialSeenAsync();
+            if (!tutorialSeen)
+            {
+                var options = new DialogOptions { CloseOnEscapeKey = true, NoHeader = false };
+                var result = await Dialog.ShowAsync<Onboarding.IdentityTutorialDialog>("Välj din spelare", options);
+                await result.Result;
+                await LoadIdentityAsync();
+            }
+            
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadIdentityAsync()
+    {
+        _identityName = await IdentityService.GetIdentityNameAsync();
+    }
+
+    private async Task OpenIdentityDialog()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, NoHeader = false };
+        var result = await Dialog.ShowAsync<Onboarding.IdentityTutorialDialog>("Välj din spelare", options);
+        await result.Result;
+        await LoadIdentityAsync();
+        StateHasChanged();
+    }
+
+    private async Task ForgetIdentity()
+    {
+        await IdentityService.ClearIdentityAsync();
+        await LoadIdentityAsync();
+        StateHasChanged();
     }
 }

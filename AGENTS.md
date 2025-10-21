@@ -27,6 +27,9 @@
 ## Comments & Documentation
 - Prefer self-explanatory names; comment only on intent or edge cases, and avoid XML documentation on obvious members.
 
+## UI Text Language
+- Skriv all UI‑text på svenska.
+
 ## Commit & Pull Request Guidelines
 - Write imperative, scoped commit subjects (e.g., `Add weather data service`) and bundle related changes together.
 - Record testing evidence, configuration updates, linked issues, and attach UI screenshots or GIFs for visual changes.
