@@ -86,11 +86,23 @@
         @if (_submissionMode == SubmissionMode.OutcomeOnly)
         {
             <MudStack Spacing="1">
-                <MudText Typo="Typo.subtitle2">Vinnare</MudText>
-                <MudRadioGroup T="Winner" selectedOption="_selectedWinner" selectedOptionChanged="@((Winner w) => { _selectedWinner = w; _model.Winner = w; StateHasChanged(); })">
-                    <MudRadio T="Winner" option="@Winner.PlayerOne" Color="Color.Primary">@(_model.PlayerOne ?? "Spelare ett")</MudRadio>
-                    <MudRadio T="Winner" option="@Winner.PlayerTwo" Color="Color.Primary">@(_model.PlayerTwo ?? "Spelare två")</MudRadio>
-                </MudRadioGroup>
+                <MudText Typo="Typo.subtitle2">Setresultat</MudText>
+                <MudTextField @bind-Value="_outcomeSetsInput"
+                              Label="Ange antal vunna set"
+                              Placeholder="t.ex. 2-1"
+                              Immediate="true"
+                              InputType="InputType.Text"
+                              AdornmentIcon="@Icons.Material.Filled.SportsTennis"
+                              AdornmentColor="Color.Primary" />
+                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                    Formatet är &quot;spelare ett - spelare två&quot;, exempelvis 3-1. Vinnaren räknas automatiskt.
+                </MudText>
+                @if (TryGetOutcomePreview(out var preview))
+                {
+                    <MudAlert Severity="Severity.Info" Dense="true" Variant="Variant.Outlined">
+                        @($"{preview.WinnerName} vann {preview.PlayerOneSets}-{preview.PlayerTwoSets}")
+                    </MudAlert>
+                }
             </MudStack>
         }
         else
@@ -168,7 +180,7 @@
     private string? _identityName;
     private List<Suggestion> _suggestions = new();
     private SubmissionMode _submissionMode = SubmissionMode.OutcomeOnly;
-    private Winner _selectedWinner = Winner.PlayerOne; // UI binding value, defaults to PlayerOne for display
+    private string _outcomeSetsInput = string.Empty;
     private static readonly CultureInfo SwedishCulture = CultureInfo.GetCultureInfo("sv-SE");
 
     protected override async Task OnInitializedAsync()
@@ -323,15 +335,21 @@
 
         if (_submissionMode == SubmissionMode.OutcomeOnly)
         {
-            // Use _selectedWinner which is always set (defaults to PlayerOne)
-            // _model.Winner is set when user interacts, but we can also use _selectedWinner directly
-            var playerOneWon = _selectedWinner == Winner.PlayerOne;
+                if (!TryParseOutcomeSets(_outcomeSetsInput, out var playerOneSets, out var playerTwoSets, out var parseError))
+                {
+                    _error = parseError;
+                    return;
+                }
+
+                var playerOneWon = playerOneSets > playerTwoSets;
+                var outcomeSets = BuildOutcomeSetDtos(playerOneSets, playerTwoSets);
+
             dto = (MatchSubmissionDto)new OutcomeOnlyMatchSubmissionDto(
                 p1!,
                 p2!,
                 _model.MatchDate.HasValue ? DateOnly.FromDateTime(_model.MatchDate.Value) : DateOnly.FromDateTime(DateTime.UtcNow),
                 playerOneWon,
-                Sets: null,
+                    Sets: outcomeSets,
                 SubmittedBy: submittedBy);
         }
         else
@@ -371,9 +389,8 @@
             await OnSubmitted.InvokeAsync();
 
             // Reset form but keep players for consecutive matches
-            _model.Winner = null;
-            _selectedWinner = Winner.PlayerOne;
             _model.Sets.Clear();
+            _outcomeSetsInput = string.Empty;
             if (_submissionMode == SubmissionMode.Scored)
             {
                 for (var i = 0; i < 3; i++) AddSet();
@@ -400,20 +417,12 @@
         public DateTime? MatchDate { get; set; } = DateTime.Today;
 
         public List<SetDraft> Sets { get; } = new();
-
-        public Winner? Winner { get; set; }
     }
 
     private enum SubmissionMode
     {
         OutcomeOnly,
         Scored
-    }
-
-    private enum Winner
-    {
-        PlayerOne,
-        PlayerTwo
     }
 
     private sealed class SetDraft
@@ -477,4 +486,93 @@
     private sealed record PlayerCreated(Guid id, string displayName);
     private sealed record Suggestion(Guid id, string displayName, int count);
     private sealed record SuggestionsResponse(List<Suggestion> items);
+
+    private readonly record struct OutcomePreview(int PlayerOneSets, int PlayerTwoSets, string WinnerName);
+
+    private bool TryGetOutcomePreview(out OutcomePreview preview)
+    {
+        preview = default;
+        if (!TryParseOutcomeSets(_outcomeSetsInput, out var p1, out var p2, out _))
+        {
+            return false;
+        }
+
+        var winnerName = p1 > p2 ? (_model.PlayerOne ?? "Spelare ett") : (_model.PlayerTwo ?? "Spelare två");
+        preview = new OutcomePreview(p1, p2, winnerName);
+        return true;
+    }
+
+    private static List<SetWinnerDto> BuildOutcomeSetDtos(int playerOneSets, int playerTwoSets)
+    {
+        var sets = new List<SetWinnerDto>(playerOneSets + playerTwoSets);
+        var p1 = playerOneSets;
+        var p2 = playerTwoSets;
+        var setNumber = 1;
+        while (p1 > 0 || p2 > 0)
+        {
+            if (p1 > 0)
+            {
+                sets.Add(new SetWinnerDto(setNumber++, true));
+                p1--;
+            }
+
+            if (p2 > 0)
+            {
+                sets.Add(new SetWinnerDto(setNumber++, false));
+                p2--;
+            }
+        }
+
+        return sets;
+    }
+
+    private static bool TryParseOutcomeSets(string? input, out int playerOneSets, out int playerTwoSets, out string? error)
+    {
+        playerOneSets = 0;
+        playerTwoSets = 0;
+        error = null;
+
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            error = "Ange setresultat, till exempel 2-1.";
+            return false;
+        }
+
+        var normalized = input.Trim();
+        var dashIndex = normalized.IndexOf('-', StringComparison.Ordinal);
+        if (dashIndex <= 0 || dashIndex >= normalized.Length - 1)
+        {
+            error = "Använd formatet X-Y, exempelvis 2-1.";
+            return false;
+        }
+
+        var left = normalized[..dashIndex].Trim();
+        var right = normalized[(dashIndex + 1)..].Trim();
+        if (!int.TryParse(left, NumberStyles.Integer, CultureInfo.InvariantCulture, out playerOneSets) ||
+            !int.TryParse(right, NumberStyles.Integer, CultureInfo.InvariantCulture, out playerTwoSets))
+        {
+            error = "Setresultatet måste innehålla siffror, till exempel 3-1.";
+            return false;
+        }
+
+        if (playerOneSets < 0 || playerTwoSets < 0)
+        {
+            error = "Antal set måste vara noll eller större.";
+            return false;
+        }
+
+        if (playerOneSets == 0 && playerTwoSets == 0)
+        {
+            error = "Minst ett set måste vinnas.";
+            return false;
+        }
+
+        if (playerOneSets == playerTwoSets)
+        {
+            error = "Setresultatet kan inte vara oavgjort.";
+            return false;
+        }
+
+        return true;
+    }
 }
