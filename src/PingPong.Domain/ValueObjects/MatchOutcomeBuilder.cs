@@ -56,10 +56,8 @@ public static class MatchOutcomeBuilder
 
         if (list.Count == 0)
         {
-            return Array.Empty<MatchOutcome>();
+            return [];
         }
-
-        static string NormalizePair(Guid a, Guid b) => a.CompareTo(b) < 0 ? $"{a:N}-{b:N}" : $"{b:N}-{a:N}";
 
         var results = new List<MatchOutcome>();
 
@@ -88,6 +86,8 @@ public static class MatchOutcomeBuilder
         }
 
         return results;
+
+        static string NormalizePair(Guid a, Guid b) => a.CompareTo(b) < 0 ? $"{a:N}-{b:N}" : $"{b:N}-{a:N}";
     }
 
     private static IReadOnlyList<MatchSetResult> BuildSets(MatchEvent matchEvent)
@@ -102,10 +102,10 @@ public static class MatchOutcomeBuilder
                     .ToList();
             }
 
-            return new MatchSetResult[]
-            {
+            return
+            [
                 new OutcomeOnlyMatchSetResult(1, outcomeOnly.PlayerOneWon)
-            };
+            ];
         }
 
         if (matchEvent.Sets.Count == 0)

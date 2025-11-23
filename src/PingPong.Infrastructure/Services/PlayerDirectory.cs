@@ -30,23 +30,6 @@ public sealed class PlayerDirectory : IPlayerDirectory
             .Select(p => new { p.Id, p.DisplayName, p.NormalizedName })
             .ToListAsync(cancellationToken);
 
-        static int Levenshtein(string a, string b)
-        {
-            var n = a.Length; var m = b.Length;
-            var d = new int[n + 1, m + 1];
-            for (var i = 0; i <= n; i++) d[i, 0] = i;
-            for (var j = 0; j <= m; j++) d[0, j] = j;
-            for (var i = 1; i <= n; i++)
-            {
-                for (var j = 1; j <= m; j++)
-                {
-                    var cost = a[i - 1] == b[j - 1] ? 0 : 1;
-                    d[i, j] = Math.Min(Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1), d[i - 1, j - 1] + cost);
-                }
-            }
-            return d[n, m];
-        }
-
         var results = candidates
             .Select(p =>
             {
@@ -64,6 +47,23 @@ public sealed class PlayerDirectory : IPlayerDirectory
             .ToList();
 
         return results;
+
+        static int Levenshtein(string a, string b)
+        {
+            var n = a.Length; var m = b.Length;
+            var d = new int[n + 1, m + 1];
+            for (var i = 0; i <= n; i++) d[i, 0] = i;
+            for (var j = 0; j <= m; j++) d[0, j] = j;
+            for (var i = 1; i <= n; i++)
+            {
+                for (var j = 1; j <= m; j++)
+                {
+                    var cost = a[i - 1] == b[j - 1] ? 0 : 1;
+                    d[i, j] = Math.Min(Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1), d[i - 1, j - 1] + cost);
+                }
+            }
+            return d[n, m];
+        }
     }
 
     public async Task<Player> AddPlayerAsync(string displayName, CancellationToken cancellationToken = default)

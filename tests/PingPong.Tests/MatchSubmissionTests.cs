@@ -149,6 +149,6 @@ public sealed class MatchSubmissionTests : IClassFixture<IntegrationTestWebAppli
         Assert.Equal(3, evt.Sets.Count);
         Assert.True(outcomeEvent.PlayerOneWon);
         Assert.All(evt.Sets, set => Assert.Null(set.PlayerOneScore));
-        Assert.Equal(new[] { true, false, true }, evt.Sets.OrderBy(s => s.SetNumber).Select(s => s.PlayerOneWon!.Value));
+        Assert.Equal([true, false, true], evt.Sets.OrderBy(s => s.SetNumber).Select(s => s.PlayerOneWon!.Value));
     }
 }

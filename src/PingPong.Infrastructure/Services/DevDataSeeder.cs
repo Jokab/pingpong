@@ -163,35 +163,6 @@ public sealed class DevDataSeeder
 
         var sets = new List<SetScore>();
 
-        // Helper to generate a single set score: winner gets >=11 and 2-point margin
-        static (int w, int l) GenerateSet(Random r)
-        {
-            var deuce = r.NextDouble() < 0.15; // 15% chance of deuce
-            if (deuce)
-            {
-                var extra = r.Next(0, 6); // 12-10 up to 16-14
-                return (11 + extra + 1, 10 + extra);
-            }
-            else
-            {
-                var loser = r.Next(3, 10); // 3..9 creates natural-looking scores
-                var winner = Math.Max(11, loser + 2);
-                if (winner == loser) winner += 2;
-                if (winner - loser < 2) winner = loser + 2;
-                if (winner < 11) winner = 11;
-                return (winner, loser);
-            }
-        }
-
-        void AddSet(int setNumber, bool p1Wins)
-        {
-            var (w, l) = GenerateSet(rng);
-            sets.Add(
-                p1Wins
-                    ? new SetScore(setNumber, w, l)
-                    : new SetScore(setNumber, l, w));
-        }
-
         if (threeSets)
         {
             // 2-1 outcome
@@ -236,6 +207,35 @@ public sealed class DevDataSeeder
         }
 
         return sets;
+
+        // Helper to generate a single set score: winner gets >=11 and 2-point margin
+        static (int w, int l) GenerateSet(Random r)
+        {
+            var deuce = r.NextDouble() < 0.15; // 15% chance of deuce
+            if (deuce)
+            {
+                var extra = r.Next(0, 6); // 12-10 up to 16-14
+                return (11 + extra + 1, 10 + extra);
+            }
+            else
+            {
+                var loser = r.Next(3, 10); // 3..9 creates natural-looking scores
+                var winner = Math.Max(11, loser + 2);
+                if (winner == loser) winner += 2;
+                if (winner - loser < 2) winner = loser + 2;
+                if (winner < 11) winner = 11;
+                return (winner, loser);
+            }
+        }
+
+        void AddSet(int setNumber, bool p1Wins)
+        {
+            var (w, l) = GenerateSet(rng);
+            sets.Add(
+                p1Wins
+                    ? new SetScore(setNumber, w, l)
+                    : new SetScore(setNumber, l, w));
+        }
     }
 }
 
