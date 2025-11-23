@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using PingPong.Application.Interfaces;
 using PingPong.Application.Models;
 using PingPong.Infrastructure.Persistence;
+using PingPong.Domain.ValueObjects;
 
 namespace PingPong.Infrastructure.Services;
 
@@ -26,59 +27,50 @@ public sealed class HeadToHeadService : IHeadToHeadService
             .Where(e => e.PlayerOneId == playerId || e.PlayerTwoId == playerId)
             .ToListAsync(cancellationToken);
 
-        // Order in memory for SQLite compatibility
-        events = events
-            .OrderBy(e => e.MatchDate)
-            .ThenBy(e => e.CreatedAt)
-            .ThenBy(e => e.Id)
+        var eventLookup = events.ToDictionary(e => e.Id);
+        var outcomes = MatchOutcomeBuilder.BuildEffectiveOutcomes(events)
+            .Where(o => o.PlayerOneId == playerId || o.PlayerTwoId == playerId)
+            .OrderBy(o => o.MatchDate)
+            .ThenBy(o => o.CreatedAt)
+            .ThenBy(o => o.EventId)
             .ToList();
 
-        if (events.Count == 0)
+        if (outcomes.Count == 0)
         {
             return Array.Empty<HeadToHeadRow>();
         }
 
-        static string NormalizePair(Guid a, Guid b) => a.CompareTo(b) < 0 ? $"{a:N}-{b:N}" : $"{b:N}-{a:N}";
-
-        // Group by date and normalized pair to build effective outcomes (last-write-wins per ordinal)
-        var grouped = events
-            .GroupBy(e => new { e.MatchDate, PairKey = NormalizePair(e.PlayerOneId, e.PlayerTwoId) })
-            .Select(g => new { g.Key.MatchDate, g.Key.PairKey, Items = g.OrderBy(i => i.CreatedAt).ThenBy(i => i.Id).ToList() })
-            .ToList();
-
         var perOpponent = new Dictionary<Guid, MutableAggregate>();
 
-        foreach (var group in grouped)
+        foreach (var outcome in outcomes)
         {
-            var ordered = group.Items;
-            for (var ordinal = 0; ordinal < ordered.Count; ordinal++)
+            if (!eventLookup.TryGetValue(outcome.EventId, out var ev))
             {
-                var ev = ordered[ordinal];
-                var p1Sets = ev.Sets.Count(s => s.PlayerOneScore > s.PlayerTwoScore);
-                var p2Sets = ev.Sets.Count(s => s.PlayerTwoScore > s.PlayerOneScore);
-                if (p1Sets == p2Sets)
-                {
-                    continue; // ignore ties
-                }
-
-                var opponentId = ev.PlayerOneId == playerId ? ev.PlayerTwoId : ev.PlayerOneId;
-                var opponentName = ev.PlayerOneId == playerId ? ev.PlayerTwo!.DisplayName : ev.PlayerOne!.DisplayName;
-
-                if (!perOpponent.TryGetValue(opponentId, out var agg))
-                {
-                    agg = new MutableAggregate(opponentId, opponentName);
-                    perOpponent[opponentId] = agg;
-                }
-
-                agg.MatchesPlayed++;
-                var playerWon = (ev.PlayerOneId == playerId && p1Sets > p2Sets) || (ev.PlayerTwoId == playerId && p2Sets > p1Sets);
-                if (playerWon) agg.Wins++; else agg.Losses++;
-
-                // Point differential per match from player's perspective
-                var pointDiff = ev.Sets.Sum(s =>
-                    ev.PlayerOneId == playerId ? (s.PlayerOneScore - s.PlayerTwoScore) : (s.PlayerTwoScore - s.PlayerOneScore));
-                agg.PointDifferentialTotal += pointDiff;
+                continue;
             }
+
+            var playerIsP1 = outcome.PlayerOneId == playerId;
+            var opponentId = playerIsP1 ? outcome.PlayerTwoId : outcome.PlayerOneId;
+            var opponentName = playerIsP1 ? ev.PlayerTwo!.DisplayName : ev.PlayerOne!.DisplayName;
+
+            if (!perOpponent.TryGetValue(opponentId, out var agg))
+            {
+                agg = new MutableAggregate(opponentId, opponentName);
+                perOpponent[opponentId] = agg;
+            }
+
+            agg.MatchesPlayed++;
+            var playerWon = playerIsP1 ? outcome.PlayerOneWon : !outcome.PlayerOneWon;
+            if (playerWon)
+            {
+                agg.Wins++;
+            }
+            else
+            {
+                agg.Losses++;
+            }
+
+            agg.PointDifferentialTotal += ComputePointDifferential(outcome, playerIsP1);
         }
 
         var rows = perOpponent.Values
@@ -122,7 +114,6 @@ public sealed class HeadToHeadService : IHeadToHeadService
         var nameA = players.FirstOrDefault(p => p.Id == playerAId)?.DisplayName ?? "";
         var nameB = players.FirstOrDefault(p => p.Id == playerBId)?.DisplayName ?? "";
 
-        // Query events for the pair within the optional date window
         var query = _context.MatchEvents
             .AsNoTracking()
             .Include(e => e.Sets)
@@ -137,8 +128,11 @@ public sealed class HeadToHeadService : IHeadToHeadService
             query = query.Where(e => e.MatchDate <= to.Value);
         }
 
-        // Load into memory first, then order for SQLite compatibility (DateTimeOffset ordering)
-        var events = await query.ToListAsync(cancellationToken);
+        var events = await query
+            .OrderBy(e => e.MatchDate)
+            .ThenBy(e => e.Id)
+            .ToListAsync(cancellationToken);
+
         events = events
             .OrderBy(e => e.MatchDate)
             .ThenBy(e => e.CreatedAt)
@@ -150,21 +144,21 @@ public sealed class HeadToHeadService : IHeadToHeadService
             return new HeadToHeadDetails(playerAId, nameA, playerBId, nameB, 0, 0, 0, 0, 0, 0d, 0d, null, null, Array.Empty<MatchHistoryEntry>());
         }
 
-        // Group by date to compute effective matches in chronological order for this pair
-        var grouped = events
-            .GroupBy(e => e.MatchDate)
-            .Select(g => new { Date = g.Key, Items = g.OrderBy(i => i.CreatedAt).ThenBy(i => i.Id).ToList() })
-            .OrderBy(g => g.Date)
+        var eventLookup = events.ToDictionary(e => e.Id);
+        var outcomes = MatchOutcomeBuilder.BuildEffectiveOutcomes(events)
+            .Where(o => (o.PlayerOneId == playerAId && o.PlayerTwoId == playerBId) ||
+                        (o.PlayerOneId == playerBId && o.PlayerTwoId == playerAId))
+            .OrderBy(o => o.MatchDate)
+            .ThenBy(o => o.CreatedAt)
+            .ThenBy(o => o.EventId)
             .ToList();
 
-        var effective = new List<(DateOnly Date, int Index, Domain.Entities.MatchEvent Ev)>();
-        foreach (var g in grouped)
+        if (outcomes.Count == 0)
         {
-            for (var i = 0; i < g.Items.Count; i++)
-            {
-                effective.Add((g.Date, i + 1, g.Items[i]));
-            }
+            return new HeadToHeadDetails(playerAId, nameA, playerBId, nameB, 0, 0, 0, 0, 0, 0d, 0d, null, null, Array.Empty<MatchHistoryEntry>());
         }
+
+        var ordinalByEvent = BuildOrdinals(outcomes);
 
         var matchesPlayed = 0;
         var wins = 0;
@@ -172,81 +166,54 @@ public sealed class HeadToHeadService : IHeadToHeadService
         var setsWon = 0;
         var setsLost = 0;
         var pointDiffTotal = 0;
+        var recent = new List<MatchHistoryEntry>(outcomes.Count);
 
-        var recent = new List<MatchHistoryEntry>();
-
-        foreach (var tuple in effective)
+        foreach (var outcome in outcomes)
         {
-            var ev = tuple.Ev;
-            var p1Sets = ev.Sets.Count(s => s.PlayerOneScore > s.PlayerTwoScore);
-            var p2Sets = ev.Sets.Count(s => s.PlayerTwoScore > s.PlayerOneScore);
-            if (p1Sets == p2Sets)
+            matchesPlayed++;
+            var playerAWon = outcome.PlayerOneId == playerAId ? outcome.PlayerOneWon : !outcome.PlayerOneWon;
+            if (playerAWon)
+            {
+                wins++;
+            }
+            else
+            {
+                losses++;
+            }
+
+            var (setsWonDelta, setsLostDelta) = CountSetsForPlayer(outcome, playerAId);
+            setsWon += setsWonDelta;
+            setsLost += setsLostDelta;
+
+            pointDiffTotal += ComputePointDifferential(outcome, outcome.PlayerOneId == playerAId);
+
+            if (!eventLookup.TryGetValue(outcome.EventId, out var ev))
             {
                 continue;
             }
 
-            matchesPlayed++;
-            var aWon = (ev.PlayerOneId == playerAId && p1Sets > p2Sets) || (ev.PlayerTwoId == playerAId && p2Sets > p1Sets);
-            if (aWon) wins++; else losses++;
-
-            if (ev.PlayerOneId == playerAId)
-            {
-                setsWon += p1Sets;
-                setsLost += p2Sets;
-            }
-            else
-            {
-                setsWon += p2Sets;
-                setsLost += p1Sets;
-            }
-
-            var pointDiff = ev.Sets.Sum(s => ev.PlayerOneId == playerAId ? (s.PlayerOneScore - s.PlayerTwoScore) : (s.PlayerTwoScore - s.PlayerOneScore));
-            pointDiffTotal += pointDiff;
-
-            // Build history entry for this effective match
-            Guid? winnerId = null;
-            string? winnerName = null;
-            if (p1Sets != p2Sets)
-            {
-                var p1Wins = p1Sets > p2Sets;
-                winnerId = p1Wins ? ev.PlayerOneId : ev.PlayerTwoId;
-                winnerName = null; // Names not necessary here; UI can infer by id, or fill if needed
-            }
+            var playerOneName = ev.PlayerOneId == playerAId ? nameA : nameB;
+            var playerTwoName = ev.PlayerOneId == playerAId ? nameB : nameA;
+            var setPairs = BuildSetPairsForPlayer(outcome, playerAId);
+            var winnerId = outcome.WinnerId;
+            string? winnerName = winnerId == playerAId ? nameA : winnerId == playerBId ? nameB : null;
 
             recent.Add(new MatchHistoryEntry(
-                ev.Id,
-                tuple.Date,
-                tuple.Index,
-                ev.PlayerOneId == playerAId ? nameA : nameB,
-                ev.PlayerOneId == playerAId ? nameB : nameA,
-                ev.Sets.Select(s => new SetPair(
-                    ev.PlayerOneId == playerAId ? s.PlayerOneScore : s.PlayerTwoScore,
-                    ev.PlayerOneId == playerAId ? s.PlayerTwoScore : s.PlayerOneScore)).ToList(),
+                outcome.EventId,
+                outcome.MatchDate,
+                ordinalByEvent[outcome.EventId],
+                playerOneName,
+                playerTwoName,
+                setPairs,
                 winnerId,
                 winnerName,
                 ev.SubmittedBy,
-                ev.CreatedAt));
+                outcome.CreatedAt));
         }
 
-        var lastMatch = effective.LastOrDefault();
-        DateOnly? lastDate = null;
-        Guid? lastWinnerId = null;
-        if (lastMatch.Ev is not null)
-        {
-            lastDate = lastMatch.Date;
-            var ev = lastMatch.Ev;
-            var p1Sets = ev.Sets.Count(s => s.PlayerOneScore > s.PlayerTwoScore);
-            var p2Sets = ev.Sets.Count(s => s.PlayerTwoScore > s.PlayerOneScore);
-            if (p1Sets != p2Sets)
-            {
-                lastWinnerId = p1Sets > p2Sets ? ev.PlayerOneId : ev.PlayerTwoId;
-            }
-        }
-
+        var lastOutcome = outcomes.Last();
         var winPct = matchesPlayed == 0 ? 0d : Math.Round((double)wins / matchesPlayed, 4, MidpointRounding.AwayFromZero);
         var avgPointDiff = matchesPlayed == 0 ? 0d : Math.Round((double)pointDiffTotal / matchesPlayed, 2, MidpointRounding.AwayFromZero);
-
-        // Keep only the 5 most recent matches for the details view
         var recent5 = recent
             .OrderBy(r => r.MatchDate)
             .ThenBy(r => r.CreatedAt)
@@ -266,9 +233,75 @@ public sealed class HeadToHeadService : IHeadToHeadService
             setsLost,
             winPct,
             avgPointDiff,
-            lastDate,
-            lastWinnerId,
+            lastOutcome.MatchDate,
+            lastOutcome.WinnerId,
             recent5);
+    }
+
+    private static Dictionary<Guid, int> BuildOrdinals(IReadOnlyList<MatchOutcome> outcomes)
+    {
+        var map = new Dictionary<Guid, int>();
+        var grouped = outcomes
+            .GroupBy(o => o.MatchDate)
+            .OrderBy(g => g.Key);
+
+        foreach (var group in grouped)
+        {
+            var ordinal = 1;
+            foreach (var outcome in group.OrderBy(o => o.CreatedAt).ThenBy(o => o.EventId))
+            {
+                map[outcome.EventId] = ordinal++;
+            }
+        }
+
+        return map;
+    }
+
+    private static (int setsWon, int setsLost) CountSetsForPlayer(MatchOutcome outcome, Guid playerId)
+    {
+        var playerIsP1 = outcome.PlayerOneId == playerId;
+        var setsWon = outcome.Sets.Count(s => playerIsP1 ? s.PlayerOneWon : !s.PlayerOneWon);
+        var setsLost = outcome.Sets.Count - setsWon;
+        return (setsWon, setsLost);
+    }
+
+    private static int ComputePointDifferential(MatchOutcome outcome, bool perspectiveIsPlayerOne)
+    {
+        var diff = 0;
+        foreach (var set in outcome.Sets)
+        {
+            if (set is ScoredMatchSetResult scored)
+            {
+                diff += perspectiveIsPlayerOne
+                    ? scored.Score.PlayerOneScore - scored.Score.PlayerTwoScore
+                    : scored.Score.PlayerTwoScore - scored.Score.PlayerOneScore;
+            }
+        }
+
+        return diff;
+    }
+
+    private static IReadOnlyList<SetPair> BuildSetPairsForPlayer(MatchOutcome outcome, Guid playerId)
+    {
+        var playerIsP1 = outcome.PlayerOneId == playerId;
+        var pairs = new List<SetPair>(outcome.Sets.Count);
+
+        foreach (var set in outcome.Sets)
+        {
+            if (set is ScoredMatchSetResult scored)
+            {
+                var p1Score = playerIsP1 ? scored.Score.PlayerOneScore : scored.Score.PlayerTwoScore;
+                var p2Score = playerIsP1 ? scored.Score.PlayerTwoScore : scored.Score.PlayerOneScore;
+                pairs.Add(new SetPair(p1Score, p2Score));
+            }
+            else
+            {
+                var playerWon = playerIsP1 ? set.PlayerOneWon : !set.PlayerOneWon;
+                pairs.Add(playerWon ? new SetPair(1, 0) : new SetPair(0, 1));
+            }
+        }
+
+        return pairs;
     }
 
     private sealed class MutableAggregate

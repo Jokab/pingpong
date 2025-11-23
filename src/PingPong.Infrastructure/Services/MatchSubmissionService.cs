@@ -24,10 +24,20 @@ public sealed class MatchSubmissionService : IMatchSubmissionService
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var hasSets = request.Sets is not null && request.Sets.Count > 0;
-        if (!hasSets && request.PlayerOneWon is null)
+        var scoredSets = request.Sets;
+        var outcomeOnlySets = request.OutcomeOnlySets;
+
+        if (scoredSets.Count > 0 && outcomeOnlySets.Count > 0)
         {
-            throw new DomainValidationException("At least sets or PlayerOneWon must be provided.");
+            throw new DomainValidationException("Cannot mix scored sets with outcome-only set winners.");
+        }
+
+        var hasScoredSets = scoredSets.Count > 0;
+        var hasOutcomeOnlySets = outcomeOnlySets.Count > 0;
+
+        if (!hasScoredSets && !hasOutcomeOnlySets && request.PlayerOneWon is null)
+        {
+            throw new DomainValidationException("At least sets, outcome-only set winners, or PlayerOneWon must be provided.");
         }
 
         var playerOne = await _playerDirectory.EnsurePlayerAsync(request.PlayerOneName, cancellationToken);
@@ -35,9 +45,9 @@ public sealed class MatchSubmissionService : IMatchSubmissionService
 
         var submittedAt = DateTimeOffset.UtcNow;
 
-        if (hasSets)
+        if (hasScoredSets)
         {
-            var setScores = (request.Sets ?? Array.Empty<SetScore>())
+            var setScores = scoredSets
                 .OrderBy(set => set.SetNumber)
                 .Select(set => new MatchSetScore(set.PlayerOneScore, set.PlayerTwoScore))
                 .ToList();
@@ -77,18 +87,60 @@ public sealed class MatchSubmissionService : IMatchSubmissionService
                 SubmittedBy = string.IsNullOrWhiteSpace(request.SubmittedBy) ? null : request.SubmittedBy!.Trim(),
                 PlayerOne = playerOne,
                 PlayerTwo = playerTwo,
-                Sets = setScores.Select((s, idx) => new MatchEventSet
-                {
-                    Id = Guid.NewGuid(),
-                    MatchEventId = matchEventId,
-                    SetNumber = idx + 1,
-                    PlayerOneScore = s.PlayerOneScore,
-                    PlayerTwoScore = s.PlayerTwoScore
-                }).ToList()
+                Sets = setScores.Select((s, idx) => MatchEventSetEntity.CreateScored(matchEventId, idx + 1, s)).ToList()
             };
 
             // Ensure EF doesn't enforce FK to a Match row: keep default
             matchEvent.MatchId = matchEvent.MatchId;
+            _context.MatchEvents.Add(matchEvent);
+            await _context.SaveChangesAsync(cancellationToken);
+
+            await _ratingService.RebuildAllRatingsAsync(cancellationToken);
+            return new MatchSubmissionResult(Guid.Empty, matchEvent.Id);
+        }
+        
+        if (hasOutcomeOnlySets)
+        {
+            var ordered = outcomeOnlySets.OrderBy(s => s.SetNumber).ToList();
+            if (ordered.Any(s => s.SetNumber <= 0))
+            {
+                throw new DomainValidationException("Set numbers must be positive.");
+            }
+
+            if (ordered.GroupBy(s => s.SetNumber).Any(g => g.Count() > 1))
+            {
+                throw new DomainValidationException("Duplicate set numbers are not allowed.");
+            }
+
+            var p1SetsWon = ordered.Count(s => s.PlayerOneWon);
+            var p2SetsWon = ordered.Count - p1SetsWon;
+            if (p1SetsWon == p2SetsWon)
+            {
+                throw new DomainValidationException("Outcome-only sets must produce a clear winner.");
+            }
+
+            var derivedWinner = p1SetsWon > p2SetsWon;
+            if (request.PlayerOneWon is not null && request.PlayerOneWon.Value != derivedWinner)
+            {
+                throw new DomainValidationException("PlayerOneWon does not match the provided set winners.");
+            }
+
+            var matchEventId = Guid.NewGuid();
+            var matchEvent = new OutcomeOnlyMatchEvent
+            {
+                Id = matchEventId,
+                EventType = MatchEventType.Recorded,
+                PlayerOneId = playerOne.Id,
+                PlayerTwoId = playerTwo.Id,
+                MatchDate = request.MatchDate,
+                CreatedAt = submittedAt,
+                SubmittedBy = string.IsNullOrWhiteSpace(request.SubmittedBy) ? null : request.SubmittedBy!.Trim(),
+                PlayerOne = playerOne,
+                PlayerTwo = playerTwo,
+                PlayerOneWon = derivedWinner,
+                Sets = ordered.Select(set => MatchEventSetEntity.CreateOutcomeOnly(matchEventId, set.SetNumber, set.PlayerOneWon)).ToList()
+            };
+
             _context.MatchEvents.Add(matchEvent);
             await _context.SaveChangesAsync(cancellationToken);
 

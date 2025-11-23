@@ -23,6 +23,9 @@ public sealed record OutcomeOnlyMatchSubmissionDto(
     string PlayerTwoName,
     DateOnly? MatchDate,
     bool PlayerOneWon,
+    IReadOnlyList<SetWinnerDto>? Sets,
     string? SubmittedBy) : MatchSubmissionDto(PlayerOneName, PlayerTwoName, MatchDate, SubmittedBy);
 
 public sealed record SetScoreDto(int PlayerOneScore, int PlayerTwoScore);
+
+public sealed record SetWinnerDto(int SetNumber, bool PlayerOneWon);

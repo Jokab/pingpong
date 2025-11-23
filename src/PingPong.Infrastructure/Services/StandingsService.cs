@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using PingPong.Application.Interfaces;
 using PingPong.Application.Models;
-using PingPong.Domain.Entities;
 using PingPong.Infrastructure.Persistence;
+using PingPong.Domain.ValueObjects;
 
 namespace PingPong.Infrastructure.Services;
 
@@ -40,51 +40,10 @@ public sealed class StandingsService : IStandingsService
             .AsNoTracking()
             .Include(e => e.Sets)
             .ToListAsync(cancellationToken);
-        
-        events = events
-            .OrderBy(e => e.MatchDate)
-            .ThenBy(e => e.CreatedAt)
-            .ThenBy(e => e.Id)
-            .ToList();
 
-        // Group by date + normalized pair, then assign ordinal and pick the last event per ordinal slot
-        var comparer = StringComparer.Ordinal;
-        var effectiveOutcomes = new List<Outcome>();
-        var grouped = events
-            .GroupBy(e => new { e.MatchDate, PairKey = NormalizePair(e.PlayerOneId, e.PlayerTwoId) })
-            .Select(g => new { g.Key.MatchDate, g.Key.PairKey, Items = g.OrderBy(i => i.CreatedAt).ThenBy(i => i.Id).ToList() })
-            .ToList();
+        var outcomes = MatchOutcomeBuilder.BuildEffectiveOutcomes(events);
 
-        foreach (var group in grouped)
-        {
-            // Assign ordinal by chronological item order for the pair on that date
-            var ordered = group.Items;
-            // For each ordinal position, take the last event (if multiple edits for same ordinal)
-            for (var ordinal = 0; ordinal < ordered.Count; ordinal++)
-            {
-                var last = ordered[ordinal];
-
-                bool? p1Won = null;
-                if (last is OutcomeOnlyMatchEvent outcome)
-                {
-                    p1Won = outcome.PlayerOneWon;
-                }
-                else
-                {
-                    var p1Sets = last.Sets.Count(s => s.PlayerOneScore > s.PlayerTwoScore);
-                    var p2Sets = last.Sets.Count(s => s.PlayerTwoScore > s.PlayerOneScore);
-                    if (p1Sets != p2Sets)
-                    {
-                        p1Won = p1Sets > p2Sets;
-                    }
-                }
-                if (p1Won is null) continue;
-
-                effectiveOutcomes.Add(new Outcome(last.PlayerOneId, last.PlayerTwoId, p1Won.Value ? 1 : 0, p1Won.Value ? 0 : 1));
-            }
-        }
-
-        foreach (var outcome in effectiveOutcomes)
+        foreach (var outcome in outcomes)
         {
             if (!playerStats.TryGetValue(outcome.PlayerOneId, out var p1))
             {
@@ -99,7 +58,7 @@ public sealed class StandingsService : IStandingsService
 
             p1.MatchesPlayed++;
             p2.MatchesPlayed++;
-            if (outcome.PlayerOneSetsWon > outcome.PlayerTwoSetsWon)
+            if (outcome.PlayerOneWon)
             {
                 p1.Wins++;
                 p2.Losses++;
@@ -140,17 +99,6 @@ public sealed class StandingsService : IStandingsService
     }
 
     private sealed record PlayerProjection(Guid Id, string DisplayName, double Rating);
-
-    private static string NormalizePair(Guid a, Guid b)
-    {
-        return a.CompareTo(b) < 0 ? $"{a:N}-{b:N}" : $"{b:N}-{a:N}";
-    }
-
-    private sealed record EventProjection(Guid PlayerOneId, Guid PlayerTwoId, DateOnly MatchDate, IReadOnlyList<SetProjection> Sets, DateTimeOffset CreatedAt, Guid Id);
-
-    private sealed record SetProjection(int SetNumber, int PlayerOneScore, int PlayerTwoScore);
-
-    private sealed record Outcome(Guid PlayerOneId, Guid PlayerTwoId, int PlayerOneSetsWon, int PlayerTwoSetsWon);
 
     private sealed class MutablePlayerStats
     {

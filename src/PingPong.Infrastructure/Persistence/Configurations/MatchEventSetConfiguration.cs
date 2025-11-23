@@ -4,14 +4,23 @@ using PingPong.Domain.Entities;
 
 namespace PingPong.Infrastructure.Persistence.Configurations;
 
-public sealed class MatchEventSetConfiguration : IEntityTypeConfiguration<MatchEventSet>
+public sealed class MatchEventSetConfiguration : IEntityTypeConfiguration<MatchEventSetEntity>
 {
-    public void Configure(EntityTypeBuilder<MatchEventSet> builder)
+    public void Configure(EntityTypeBuilder<MatchEventSetEntity> builder)
     {
         builder.HasKey(s => s.Id);
 
         builder.Property(s => s.SetNumber)
             .IsRequired();
+
+        builder.Property(s => s.PlayerOneScore)
+            .IsRequired(false);
+
+        builder.Property(s => s.PlayerTwoScore)
+            .IsRequired(false);
+
+        builder.Property(s => s.PlayerOneWon)
+            .IsRequired(false);
 
         builder.HasIndex(s => new { s.MatchEventId, s.SetNumber })
             .IsUnique();

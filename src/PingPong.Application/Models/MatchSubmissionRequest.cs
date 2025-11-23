@@ -5,7 +5,10 @@ public sealed record MatchSubmissionRequest(
     string PlayerTwoName,
     DateOnly MatchDate,
     IReadOnlyList<SetScore> Sets,
-    string? SubmittedBy,
-    bool? PlayerOneWon);
+    IReadOnlyList<SetWinner> OutcomeOnlySets,
+    bool? PlayerOneWon,
+    string? SubmittedBy);
 
 public sealed record SetScore(int SetNumber, int PlayerOneScore, int PlayerTwoScore);
+
+public sealed record SetWinner(int SetNumber, bool PlayerOneWon);

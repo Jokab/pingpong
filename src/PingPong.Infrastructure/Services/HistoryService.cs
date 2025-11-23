@@ -59,7 +59,9 @@ public sealed class HistoryService : IHistoryService
                 e.SubmittedBy,
                 e.Sets
                     .OrderBy(s => s.SetNumber)
-                    .Select(s => new SetTuple(s.PlayerOneScore, s.PlayerTwoScore))
+                    .Select(s => new SetTuple(
+                        s.PlayerOneScore ?? (s.PlayerOneWon.HasValue ? (s.PlayerOneWon.Value ? 1 : 0) : 0),
+                        s.PlayerTwoScore ?? (s.PlayerOneWon.HasValue ? (s.PlayerOneWon.Value ? 0 : 1) : 0)))
                     .ToList()))
             .ToListAsync(cancellationToken);
 

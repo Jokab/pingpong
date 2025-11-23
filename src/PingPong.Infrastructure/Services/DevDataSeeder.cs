@@ -127,8 +127,9 @@ public sealed class DevDataSeeder
                     p2Name,
                     date,
                     sets,
-                    "dev-seeder",
-                    true);
+                    Array.Empty<SetWinner>(),
+                    null,
+                    "dev-seeder");
 
                 await _matchSubmissionService.SubmitMatchAsync(request, cancellationToken);
 

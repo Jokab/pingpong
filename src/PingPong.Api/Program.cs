@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
 using MudBlazor.Services;
 using PingPong.Api.Components;
 using PingPong.Api.Contracts;
@@ -98,24 +97,29 @@ app.MapPost("/matches", async (MatchSubmissionDto dto, IMatchSubmissionService m
         var matchDate = dto.MatchDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
 
         List<SetScore> sets;
+        List<SetWinner> outcomeOnlySets;
         bool? playerOneWon = null;
         switch (dto)
         {
             case ScoredMatchSubmissionDto scored:
                 var setDtos = scored.Sets ?? Array.Empty<SetScoreDto>();
                 sets = setDtos.Select((set, index) => new SetScore(index + 1, set.PlayerOneScore, set.PlayerTwoScore)).ToList();
+                outcomeOnlySets = new List<SetWinner>();
                 break;
             case OutcomeOnlyMatchSubmissionDto outcome:
                 sets = new List<SetScore>();
+                outcomeOnlySets = (outcome.Sets ?? Array.Empty<SetWinnerDto>())
+                    .Select(s => new SetWinner(s.SetNumber, s.PlayerOneWon))
+                    .ToList();
                 playerOneWon = outcome.PlayerOneWon;
                 break;
             default:
                 return Results.BadRequest(new { error = "Unknown submission kind." });
         }
 
-        if (sets.Count == 0 && playerOneWon is null)
+        if (sets.Count == 0 && outcomeOnlySets.Count == 0 && playerOneWon is null)
         {
-            return Results.BadRequest(new { error = "Provide either sets or PlayerOneWon." });
+            return Results.BadRequest(new { error = "Provide either sets, outcome-only set winners, or PlayerOneWon." });
         }
 
         var request = new MatchSubmissionRequest(
@@ -123,8 +127,9 @@ app.MapPost("/matches", async (MatchSubmissionDto dto, IMatchSubmissionService m
             dto.PlayerTwoName,
             matchDate,
             sets,
-            dto.SubmittedBy,
-            playerOneWon);
+            outcomeOnlySets,
+            playerOneWon,
+            dto.SubmittedBy);
 
         try
         {

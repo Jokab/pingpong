@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using PingPong.Application.Interfaces;
 using PingPong.Domain.Entities;
 using PingPong.Infrastructure.Persistence;
+using PingPong.Domain.ValueObjects;
 
 namespace PingPong.Infrastructure.Services;
 
@@ -42,66 +43,37 @@ public sealed class EloRatingService : IRatingService
             .AsNoTracking()
             .Include(e => e.Sets)
             .ToListAsync(cancellationToken);
-
-        // Order in-memory to support providers like SQLite that don't order by DateTimeOffset
-        events = events
-            .OrderBy(e => e.MatchDate)
-            .ThenBy(e => e.CreatedAt)
-            .ThenBy(e => e.Id)
+        var outcomes = MatchOutcomeBuilder.BuildEffectiveOutcomes(events)
+            .OrderBy(o => o.MatchDate)
+            .ThenBy(o => o.CreatedAt)
+            .ThenBy(o => o.EventId)
             .ToList();
 
-        if (events.Count == 0)
+        if (outcomes.Count == 0)
         {
-            // Ensure a PlayerRating row exists per player with base rating
             await UpsertRatingsAsync(ratingByPlayerId, DateTimeOffset.UtcNow, cancellationToken);
             return;
         }
 
-        // Group by natural identity: date + normalized pair; within each group, chronological order defines ordinals
-        static string NormalizePair(Guid a, Guid b) => a.CompareTo(b) < 0 ? $"{a:N}-{b:N}" : $"{b:N}-{a:N}";
-        var grouped = events
-            .GroupBy(e => new { e.MatchDate, PairKey = NormalizePair(e.PlayerOneId, e.PlayerTwoId) })
-            .Select(g => new { g.Key.MatchDate, g.Key.PairKey, Items = g.OrderBy(i => i.CreatedAt).ThenBy(i => i.Id).ToList() })
-            .OrderBy(g => g.MatchDate)
-            .ToList();
-
         DateTimeOffset lastAppliedAt = DateTimeOffset.UtcNow;
 
-        foreach (var ordered in grouped.Select(group => group.Items))
+        foreach (var outcome in outcomes)
         {
-            foreach (var last in ordered)
-            {
-                bool? p1Won = null;
-                if (last is OutcomeOnlyMatchEvent outcome)
-                {
-                    p1Won = outcome.PlayerOneWon;
-                }
-                else
-                {
-                    var p1Sets = last.Sets.Count(s => s.PlayerOneScore > s.PlayerTwoScore);
-                    var p2Sets = last.Sets.Count(s => s.PlayerTwoScore > s.PlayerOneScore);
-                    if (p1Sets != p2Sets)
-                        p1Won = p1Sets > p2Sets;
-                }
-                if (p1Won is null) continue; // invalid/draw
+            var p1Id = outcome.PlayerOneId;
+            var p2Id = outcome.PlayerTwoId;
 
-                var p1Id = last.PlayerOneId;
-                var p2Id = last.PlayerTwoId;
+            ratingByPlayerId.TryAdd(p1Id, _baseRating);
+            ratingByPlayerId.TryAdd(p2Id, _baseRating);
 
-                ratingByPlayerId.TryAdd(p1Id, _baseRating);
-                ratingByPlayerId.TryAdd(p2Id, _baseRating);
+            var p1Rating = ratingByPlayerId[p1Id];
+            var p2Rating = ratingByPlayerId[p2Id];
 
-                var p1Rating = ratingByPlayerId[p1Id];
-                var p2Rating = ratingByPlayerId[p2Id];
+            var (p1New, p2New) = ComputeEloUpdate(p1Rating, p2Rating, outcome.PlayerOneWon);
 
-                // Winner gets S=1, loser S=0
-                var (p1New, p2New) = ComputeEloUpdate(p1Rating, p2Rating, p1Won.Value);
+            ratingByPlayerId[p1Id] = p1New;
+            ratingByPlayerId[p2Id] = p2New;
 
-                ratingByPlayerId[p1Id] = p1New;
-                ratingByPlayerId[p2Id] = p2New;
-
-                lastAppliedAt = last.CreatedAt;
-            }
+            lastAppliedAt = outcome.CreatedAt;
         }
 
         await UpsertRatingsAsync(ratingByPlayerId, lastAppliedAt, cancellationToken);

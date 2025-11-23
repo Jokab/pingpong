@@ -28,7 +28,7 @@ public abstract class MatchEvent
 
     public string? SubmittedBy { get; set; }
 
-    public ICollection<MatchEventSet> Sets { get; set; } = new List<MatchEventSet>();
+    public ICollection<MatchEventSetEntity> Sets { get; set; } = new List<MatchEventSetEntity>();
 }
 
 public sealed class ScoredMatchEvent : MatchEvent
