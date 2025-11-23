@@ -18,7 +18,7 @@ COPY . .
 
 # Build and publish the application
 WORKDIR /source/src/PingPong.Api
-RUN dotnet publish -c Release -o /app --no-restore
+RUN dotnet publish -c Release -o /app
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
