@@ -66,49 +66,64 @@
 
         <MudDatePicker Label="Matchdatum" @bind-Date="_model.MatchDate" />
 
-        @if (QuickEnabled)
+        <MudStack Spacing="1">
+            <MudText Typo="Typo.subtitle2">Typ av match</MudText>
+            <MudButtonGroup Color="Color.Primary">
+                <MudButton Variant="@(_submissionMode == SubmissionMode.OutcomeOnly ? Variant.Filled : Variant.Outlined)" 
+                          OnClick="@(() => OnSubmissionModeChanged(SubmissionMode.OutcomeOnly))">
+                    Endast resultat
+                </MudButton>
+                <MudButton Variant="@(_submissionMode == SubmissionMode.Scored ? Variant.Filled : Variant.Outlined)" 
+                          OnClick="@(() => OnSubmissionModeChanged(SubmissionMode.Scored))">
+                    Med set-poäng
+                </MudButton>
+            </MudButtonGroup>
+        </MudStack>
+
+        @if (_submissionMode == SubmissionMode.OutcomeOnly)
         {
-            <MudStack Row="true" Spacing="1">
-                <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="@(() => QuickSubmitAsync(true))" StartIcon="@Icons.Material.Filled.ThumbUp">
-                    Jag vann
-                </MudButton>
-                <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="@(() => QuickSubmitAsync(false))" StartIcon="@Icons.Material.Filled.ThumbDown">
-                    Jag förlorade
-                </MudButton>
+            <MudStack Spacing="1">
+                <MudText Typo="Typo.subtitle2">Vinnare</MudText>
+                <MudRadioGroup T="Winner" selectedOption="_selectedWinner" selectedOptionChanged="@((Winner w) => { _selectedWinner = w; _model.Winner = w; StateHasChanged(); })">
+                    <MudRadio T="Winner" option="@Winner.PlayerOne" Color="Color.Primary">@(_model.PlayerOne ?? "Spelare ett")</MudRadio>
+                    <MudRadio T="Winner" option="@Winner.PlayerTwo" Color="Color.Primary">@(_model.PlayerTwo ?? "Spelare två")</MudRadio>
+                </MudRadioGroup>
             </MudStack>
         }
+        else
+        {
+            <MudStack Spacing="1">
+                <MudPaper Class="pa-2">
+                    <MudStack Spacing="1">
+                        @foreach (var set in _model.Sets)
+                        {
+                            <MudGrid>
+                                <MudItem xs="12" sm="4">
+                                    <MudText Typo="Typo.subtitle2">Set @set.Number</MudText>
+                                </MudItem>
+                                <MudItem xs="12" sm="4">
+                                    <MudNumericField @bind-Value="set.PlayerOneScore" Label="Spelare ett" Min="0" />
+                                </MudItem>
+                                <MudItem xs="12" sm="4">
+                                    <MudNumericField @bind-Value="set.PlayerTwoScore" Label="Spelare två" Min="0" />
+                                </MudItem>
+                            </MudGrid>
+                            <MudDivider Class="my-1" />
+                        }
 
-        <MudStack Spacing="1">
-            <MudPaper Class="pa-2">
-                <MudStack Spacing="1">
-                    @foreach (var set in _model.Sets)
-                    {
-                        <MudGrid>
-                            <MudItem xs="12" sm="4">
-                                <MudText Typo="Typo.subtitle2">Set @set.Number</MudText>
-                            </MudItem>
-                            <MudItem xs="12" sm="4">
-                                <MudNumericField @bind-Value="set.PlayerOneScore" Label="Spelare ett" Min="0" />
-                            </MudItem>
-                            <MudItem xs="12" sm="4">
-                                <MudNumericField @bind-Value="set.PlayerTwoScore" Label="Spelare två" Min="0" />
-                            </MudItem>
-                        </MudGrid>
-                        <MudDivider Class="my-1" />
-                    }
-
-                    <MudStack Row="true" Justify="Justify.FlexStart" Spacing="1">
-                        <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="AddSet" StartIcon="@Icons.Material.Filled.Add">
-                            Lägg till set
-                        </MudButton>
-                        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Disabled="_model.Sets.Count <= 1"
-                                   OnClick="RemoveSet" StartIcon="@Icons.Material.Filled.Remove">
-                            Ta bort set
-                        </MudButton>
+                        <MudStack Row="true" Justify="Justify.FlexStart" Spacing="1">
+                            <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="AddSet" StartIcon="@Icons.Material.Filled.Add">
+                                Lägg till set
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Disabled="_model.Sets.Count <= 1"
+                                       OnClick="RemoveSet" StartIcon="@Icons.Material.Filled.Remove">
+                                Ta bort set
+                            </MudButton>
+                        </MudStack>
                     </MudStack>
-                </MudStack>
-            </MudPaper>
-        </MudStack>
+                </MudPaper>
+            </MudStack>
+        }
 
         @if (!string.IsNullOrWhiteSpace(_error))
         {
@@ -149,10 +164,13 @@
     private bool _hasPrefilledIdentity;
     private string? _identityName;
     private List<Suggestion> _suggestions = new();
+    private SubmissionMode _submissionMode = SubmissionMode.OutcomeOnly;
+    private Winner _selectedWinner = Winner.PlayerOne; // UI binding value, defaults to PlayerOne for display
 
     protected override async Task OnInitializedAsync()
     {
-        if (_model.Sets.Count == 0)
+        // Only initialize sets if we're in scored mode
+        if (_submissionMode == SubmissionMode.Scored && _model.Sets.Count == 0)
         {
             for (var i = 0; i < 3; i++)
             {
@@ -228,6 +246,28 @@
         _model.Sets.Add(new SetDraft(nextNumber));
     }
 
+    private void OnSubmissionModeChanged(SubmissionMode mode)
+    {
+        if (_submissionMode == mode) return;
+        
+        _submissionMode = mode;
+        if (_submissionMode == SubmissionMode.Scored && _model.Sets.Count == 0)
+        {
+            // Initialize sets when switching to scored mode
+            for (var i = 0; i < 3; i++)
+            {
+                AddSet();
+            }
+        }
+        else if (_submissionMode == SubmissionMode.OutcomeOnly)
+        {
+            // Clear sets when switching to outcome-only mode
+            _model.Sets.Clear();
+        }
+        StateHasChanged();
+    }
+
+
     private void RemoveSet()
     {
         if (_model.Sets.Count > 1)
@@ -254,19 +294,6 @@
         StateHasChanged();
     }
 
-    private bool QuickEnabled
-    {
-        get
-        {
-            if (string.IsNullOrWhiteSpace(_identityName)) return false;
-            var p1 = _model.PlayerOne?.Trim();
-            var p2 = _model.PlayerTwo?.Trim();
-            if (string.IsNullOrWhiteSpace(p1) || string.IsNullOrWhiteSpace(p2)) return false;
-            if (string.Equals(p1, p2, StringComparison.OrdinalIgnoreCase)) return false;
-            return string.Equals(p1, _identityName, StringComparison.OrdinalIgnoreCase) || string.Equals(p2, _identityName, StringComparison.OrdinalIgnoreCase);
-        }
-    }
-
     private async Task SubmitAsync()
     {
         if (_isSubmitting) return;
@@ -285,22 +312,39 @@
             _error = "Spelarna måste vara olika.";
             return;
         }
-        if (_model.Sets.Count == 0)
+
+        MatchSubmissionDto dto;
+        if (_submissionMode == SubmissionMode.OutcomeOnly)
         {
-            _error = "Lägg till minst ett set.";
-            return;
+            // Use _selectedWinner which is always set (defaults to PlayerOne)
+            // _model.Winner is set when user interacts, but we can also use _selectedWinner directly
+            var playerOneWon = _selectedWinner == Winner.PlayerOne;
+            dto = (MatchSubmissionDto)new OutcomeOnlyMatchSubmissionDto(
+                p1!,
+                p2!,
+                _model.MatchDate.HasValue ? DateOnly.FromDateTime(_model.MatchDate.Value) : DateOnly.FromDateTime(DateTime.UtcNow),
+                playerOneWon,
+                "ui");
         }
+        else
+        {
+            if (_model.Sets.Count == 0)
+            {
+                _error = "Lägg till minst ett set.";
+                return;
+            }
 
-        var sets = _model.Sets
-            .Select(s => new SetScoreDto(s.PlayerOneScore, s.PlayerTwoScore))
-            .ToList();
+            var sets = _model.Sets
+                .Select(s => new SetScoreDto(s.PlayerOneScore, s.PlayerTwoScore))
+                .ToList();
 
-        var dto = (MatchSubmissionDto)new ScoredMatchSubmissionDto(
-            p1!,
-            p2!,
-            _model.MatchDate.HasValue ? DateOnly.FromDateTime(_model.MatchDate.Value) : DateOnly.FromDateTime(DateTime.UtcNow),
-            sets,
-            "ui");
+            dto = (MatchSubmissionDto)new ScoredMatchSubmissionDto(
+                p1!,
+                p2!,
+                _model.MatchDate.HasValue ? DateOnly.FromDateTime(_model.MatchDate.Value) : DateOnly.FromDateTime(DateTime.UtcNow),
+                sets,
+                "ui");
+        }
 
         try
         {
@@ -318,9 +362,14 @@
             Snackbar.Add("Match inskickad!", Severity.Success);
             await OnSubmitted.InvokeAsync();
 
-            // Reset simple fields but keep players for consecutive matches
+            // Reset form but keep players for consecutive matches
+            _model.Winner = null;
+            _selectedWinner = Winner.PlayerOne;
             _model.Sets.Clear();
-            for (var i = 0; i < 3; i++) AddSet();
+            if (_submissionMode == SubmissionMode.Scored)
+            {
+                for (var i = 0; i < 3; i++) AddSet();
+            }
         }
         catch (Exception ex)
         {
@@ -343,6 +392,20 @@
         public DateTime? MatchDate { get; set; } = DateTime.Today;
 
         public List<SetDraft> Sets { get; } = new();
+
+        public Winner? Winner { get; set; }
+    }
+
+    private enum SubmissionMode
+    {
+        OutcomeOnly,
+        Scored
+    }
+
+    private enum Winner
+    {
+        PlayerOne,
+        PlayerTwo
     }
 
     private sealed class SetDraft
@@ -406,59 +469,4 @@
     private sealed record PlayerCreated(Guid id, string displayName);
     private sealed record Suggestion(Guid id, string displayName, int count);
     private sealed record SuggestionsResponse(List<Suggestion> items);
-
-    private async Task QuickSubmitAsync(bool iWon)
-    {
-        if (_isSubmitting) return;
-        _error = null;
-        StateHasChanged();
-
-        var p1 = _model.PlayerOne?.Trim();
-        var p2 = _model.PlayerTwo?.Trim();
-        if (string.IsNullOrWhiteSpace(p1) || string.IsNullOrWhiteSpace(p2))
-        {
-            _error = "Båda spelarnamnen krävs.";
-            return;
-        }
-        if (string.Equals(p1, p2, StringComparison.OrdinalIgnoreCase))
-        {
-            _error = "Spelarna måste vara olika.";
-            return;
-        }
-
-        var meIsP1 = string.Equals(p1, _identityName, StringComparison.OrdinalIgnoreCase);
-        var playerOneWon = meIsP1 ? iWon : !iWon;
-        var dto = (MatchSubmissionDto)new OutcomeOnlyMatchSubmissionDto(
-            p1!,
-            p2!,
-            _model.MatchDate.HasValue ? DateOnly.FromDateTime(_model.MatchDate.Value) : DateOnly.FromDateTime(DateTime.UtcNow),
-            playerOneWon,
-            "ui");
-
-        try
-        {
-            _isSubmitting = true;
-            StateHasChanged();
-            var response = await Http.PostAsJsonAsync("/matches", dto);
-            var body = await response.Content.ReadAsStringAsync();
-            if (!response.IsSuccessStatusCode)
-            {
-                _error = $"Sändning misslyckades: {body}";
-                Snackbar.Add(_error, Severity.Error);
-                return;
-            }
-            Snackbar.Add("Match inskickad!", Severity.Success);
-            await OnSubmitted.InvokeAsync();
-        }
-        catch (Exception ex)
-        {
-            _error = $"Oväntat fel: {ex.Message}";
-            Snackbar.Add(_error, Severity.Error);
-        }
-        finally
-        {
-            _isSubmitting = false;
-            StateHasChanged();
-        }
-    }
 }
