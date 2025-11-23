@@ -31,6 +31,8 @@
                                 DateRangeChanged="OnDateRangeChanged"
                                 PickerVariant="PickerVariant.Inline"
                                 DisplayMonths="2"
+                                DateFormat="yyyy-MM-dd"
+                                Culture="@SwedishCulture"
                                 Class="ml-2" />
         </MudStack>
 
@@ -120,6 +122,7 @@
     private HeadToHeadDetails? _details;
     private bool _isLoading;
     private string? _errorMessage;
+    private static readonly CultureInfo SwedishCulture = CultureInfo.GetCultureInfo("sv-SE");
 
     
 

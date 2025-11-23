@@ -17,13 +17,13 @@
             <MudTh>Skapad</MudTh>
         </HeaderContent>
         <RowTemplate>
-            <MudTd DataLabel="Datum">@context.MatchDate.ToString("yyyy-MM-dd")</MudTd>
+            <MudTd DataLabel="Datum">@context.MatchDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)</MudTd>
             <MudTd DataLabel="#">@context.DayOrdinal</MudTd>
             <MudTd DataLabel="Match">@context.PlayerOneName mot @context.PlayerTwoName</MudTd>
             <MudTd DataLabel="Set">@string.Join(", ", context.Sets.Select(s => $"{s.playerOneScore}-{s.playerTwoScore}"))</MudTd>
             <MudTd DataLabel="Vinnare">@(string.IsNullOrWhiteSpace(context.WinnerName) ? "-" : context.WinnerName)</MudTd>
             <MudTd DataLabel="Inskickad av">@context.SubmittedBy</MudTd>
-            <MudTd DataLabel="Skapad">@context.CreatedAt.LocalDateTime</MudTd>
+            <MudTd DataLabel="Skapad">@context.CreatedAt.LocalDateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)</MudTd>
         </RowTemplate>
     </MudTable>
 </MudStack>

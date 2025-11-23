@@ -56,7 +56,7 @@
                         <MudTh class="text-center">Resultat</MudTh>
                     </HeaderContent>
                     <RowTemplate>
-                        <MudTd DataLabel="Datum">@context.MatchDate.ToString("yyyy-MM-dd")</MudTd>
+                        <MudTd DataLabel="Datum">@context.MatchDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)</MudTd>
                         <MudTd DataLabel="Match">@context.PlayerOneName mot @context.PlayerTwoName</MudTd>
                         <MudTd DataLabel="Set">@string.Join(", ", context.Sets.Select(s => $"{s.PlayerOneScore}-{s.PlayerTwoScore}"))</MudTd>
                         <MudTd DataLabel="Resultat" Class="text-center">

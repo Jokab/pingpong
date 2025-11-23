@@ -64,7 +64,10 @@
             </AfterItemsTemplate>
         </MudAutocomplete>
 
-        <MudDatePicker Label="Matchdatum" @bind-Date="_model.MatchDate" />
+        <MudDatePicker Label="Matchdatum"
+                       @bind-Date="_model.MatchDate"
+                       DateFormat="yyyy-MM-dd"
+                       Culture="@SwedishCulture" />
 
         <MudStack Spacing="1">
             <MudText Typo="Typo.subtitle2">Typ av match</MudText>
@@ -166,6 +169,7 @@
     private List<Suggestion> _suggestions = new();
     private SubmissionMode _submissionMode = SubmissionMode.OutcomeOnly;
     private Winner _selectedWinner = Winner.PlayerOne; // UI binding value, defaults to PlayerOne for display
+    private static readonly CultureInfo SwedishCulture = CultureInfo.GetCultureInfo("sv-SE");
 
     protected override async Task OnInitializedAsync()
     {

@@ -36,11 +36,11 @@ public sealed class HistoryService : IHistoryService
             baseQuery = baseQuery.Where(e => e.PlayerOneId == playerId || e.PlayerTwoId == playerId);
         }
 
-        // Order deterministically for ordinal and paging
+        // Order deterministically for ordinal and paging while surfacing the latest matches first.
         // SQLite cannot ORDER BY DateTimeOffset; avoid ordering by CreatedAt in SQL.
         var ordered = baseQuery
-            .OrderBy(e => e.MatchDate)
-            .ThenBy(e => e.Id);
+            .OrderByDescending(e => e.MatchDate)
+            .ThenByDescending(e => e.Id);
 
         var total = await baseQuery.CountAsync(cancellationToken);
 
@@ -65,11 +65,11 @@ public sealed class HistoryService : IHistoryService
                     .ToList()))
             .ToListAsync(cancellationToken);
 
-        // Refine ordering in-memory to ensure chronological stability by CreatedAt, then Id.
+        // Refine ordering in-memory to ensure deterministic reverse-chronological order (date > created > id).
         pageItems = pageItems
-            .OrderBy(e => e.MatchDate)
-            .ThenBy(e => e.CreatedAt)
-            .ThenBy(e => e.Id)
+            .OrderByDescending(e => e.MatchDate)
+            .ThenByDescending(e => e.CreatedAt)
+            .ThenByDescending(e => e.Id)
             .ToList();
 
         // Compute ordinals for page window relative to the day and pair across all events up to current event

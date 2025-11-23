@@ -89,7 +89,12 @@
         try
         {
             var standings = await StandingsService.GetStandingsAsync();
-            var updatedRows = standings
+            var sortedStandings = standings
+                .OrderByDescending(row => row.CurrentRating)
+                .ThenBy(row => row.PlayerName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var updatedRows = sortedStandings
                 .Select((row, index) => new StandingsRowViewModel(
                     index + 1,
                     row.PlayerId,
