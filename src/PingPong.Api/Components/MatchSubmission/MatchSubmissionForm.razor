@@ -28,6 +28,21 @@
             </AfterItemsTemplate>
         </MudAutocomplete>
 
+        @if (_suggestions.Count > 0)
+        {
+            <MudStack Spacing="1">
+                <MudText Typo="Typo.subtitle2">Snabbval</MudText>
+                <MudStack Row="true" Spacing="1">
+                    @foreach (var s in _suggestions)
+                    {
+                        <MudChip T="string" OnClick="@(() => { _model.PlayerTwo = s.displayName; StateHasChanged(); })">
+                            @s.displayName
+                        </MudChip>
+                    }
+                </MudStack>
+            </MudStack>
+        }
+
         <MudAutocomplete Value="_model.PlayerTwo" ValueChanged="@((string? sel) => OnPlayerSelected(sel, isPlayerOne: false))" Label="Spelare två" Dense="true"
                          SearchFunc="@((string value, CancellationToken token) => SearchPlayersAsync(value, token))" ToStringFunc="(s) => s"
                          ResetValueOnEmptyText="false" Clearable="true"
@@ -50,6 +65,18 @@
         </MudAutocomplete>
 
         <MudDatePicker Label="Matchdatum" @bind-Date="_model.MatchDate" />
+
+        @if (QuickEnabled)
+        {
+            <MudStack Row="true" Spacing="1">
+                <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="@(() => QuickSubmitAsync(true))" StartIcon="@Icons.Material.Filled.ThumbUp">
+                    Jag vann
+                </MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="@(() => QuickSubmitAsync(false))" StartIcon="@Icons.Material.Filled.ThumbDown">
+                    Jag förlorade
+                </MudButton>
+            </MudStack>
+        }
 
         <MudStack Spacing="1">
             <MudPaper Class="pa-2">
@@ -120,6 +147,8 @@
     private bool _isSubmitting;
     private string? _error;
     private bool _hasPrefilledIdentity;
+    private string? _identityName;
+    private List<Suggestion> _suggestions = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -136,13 +165,15 @@
         
         // Subscribe to identity changes
         IdentityService.IdentityChanged += OnIdentityChanged;
+        // await LoadSuggestionsAsync();
     }
 
     private async Task LoadIdentityAsync()
     {
+        var identityName = await IdentityService.GetIdentityNameAsync();
+        _identityName = identityName;
         if (string.IsNullOrWhiteSpace(_model.PlayerOne) && !_hasPrefilledIdentity)
         {
-            var identityName = await IdentityService.GetIdentityNameAsync();
             if (!string.IsNullOrWhiteSpace(identityName))
             {
                 _model.PlayerOne = identityName;
@@ -157,6 +188,7 @@
         if (_hasPrefilledIdentity && string.IsNullOrWhiteSpace(_model.PlayerOne))
         {
             var identityName = await IdentityService.GetIdentityNameAsync();
+            _identityName = identityName;
             if (!string.IsNullOrWhiteSpace(identityName))
             {
                 _model.PlayerOne = identityName;
@@ -204,6 +236,37 @@
         }
     }
 
+    private async Task LoadSuggestionsAsync()
+    {
+        try
+        {
+            var me = _identityName;
+            var url = string.IsNullOrWhiteSpace(me)
+                ? "/api/suggestions/opponents?take=5"
+                : $"/api/suggestions/opponents?me={Uri.EscapeDataString(me)}&take=5";
+            var resp = await Http.GetFromJsonAsync<SuggestionsResponse>(url);
+            _suggestions = resp?.items ?? new List<Suggestion>();
+        }
+        catch
+        {
+            _suggestions.Clear();
+        }
+        StateHasChanged();
+    }
+
+    private bool QuickEnabled
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(_identityName)) return false;
+            var p1 = _model.PlayerOne?.Trim();
+            var p2 = _model.PlayerTwo?.Trim();
+            if (string.IsNullOrWhiteSpace(p1) || string.IsNullOrWhiteSpace(p2)) return false;
+            if (string.Equals(p1, p2, StringComparison.OrdinalIgnoreCase)) return false;
+            return string.Equals(p1, _identityName, StringComparison.OrdinalIgnoreCase) || string.Equals(p2, _identityName, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
     private async Task SubmitAsync()
     {
         if (_isSubmitting) return;
@@ -232,7 +295,7 @@
             .Select(s => new SetScoreDto(s.PlayerOneScore, s.PlayerTwoScore))
             .ToList();
 
-        var dto = new MatchSubmissionDto(
+        var dto = (MatchSubmissionDto)new ScoredMatchSubmissionDto(
             p1!,
             p2!,
             _model.MatchDate.HasValue ? DateOnly.FromDateTime(_model.MatchDate.Value) : DateOnly.FromDateTime(DateTime.UtcNow),
@@ -341,4 +404,61 @@
     private sealed record PlayerSuggestion(Guid id, string displayName, double score, bool isExact);
     private sealed record PlayerCreate(string DisplayName);
     private sealed record PlayerCreated(Guid id, string displayName);
+    private sealed record Suggestion(Guid id, string displayName, int count);
+    private sealed record SuggestionsResponse(List<Suggestion> items);
+
+    private async Task QuickSubmitAsync(bool iWon)
+    {
+        if (_isSubmitting) return;
+        _error = null;
+        StateHasChanged();
+
+        var p1 = _model.PlayerOne?.Trim();
+        var p2 = _model.PlayerTwo?.Trim();
+        if (string.IsNullOrWhiteSpace(p1) || string.IsNullOrWhiteSpace(p2))
+        {
+            _error = "Båda spelarnamnen krävs.";
+            return;
+        }
+        if (string.Equals(p1, p2, StringComparison.OrdinalIgnoreCase))
+        {
+            _error = "Spelarna måste vara olika.";
+            return;
+        }
+
+        var meIsP1 = string.Equals(p1, _identityName, StringComparison.OrdinalIgnoreCase);
+        var playerOneWon = meIsP1 ? iWon : !iWon;
+        var dto = (MatchSubmissionDto)new OutcomeOnlyMatchSubmissionDto(
+            p1!,
+            p2!,
+            _model.MatchDate.HasValue ? DateOnly.FromDateTime(_model.MatchDate.Value) : DateOnly.FromDateTime(DateTime.UtcNow),
+            playerOneWon,
+            "ui");
+
+        try
+        {
+            _isSubmitting = true;
+            StateHasChanged();
+            var response = await Http.PostAsJsonAsync("/matches", dto);
+            var body = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+            {
+                _error = $"Sändning misslyckades: {body}";
+                Snackbar.Add(_error, Severity.Error);
+                return;
+            }
+            Snackbar.Add("Match inskickad!", Severity.Success);
+            await OnSubmitted.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Oväntat fel: {ex.Message}";
+            Snackbar.Add(_error, Severity.Error);
+        }
+        finally
+        {
+            _isSubmitting = false;
+            StateHasChanged();
+        }
+    }
 }

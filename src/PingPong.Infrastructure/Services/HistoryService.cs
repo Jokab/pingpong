@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PingPong.Application.Interfaces;
 using PingPong.Application.Models;
+using PingPong.Domain.Entities;
 using PingPong.Infrastructure.Persistence;
 
 namespace PingPong.Infrastructure.Services;
@@ -88,13 +89,32 @@ public sealed class HistoryService : IHistoryService
             var ordinal = candidates
                 .Count(x => x.CreatedAt < ev.CreatedAt || (x.CreatedAt == ev.CreatedAt && x.Id.CompareTo(ev.Id) <= 0));
 
+            // Outcome-only events are stored in the same table; we infer winner as follows:
+            // 1) If sets determine a winner, use them; otherwise 2) check OutcomeOnly flag via raw row
             var p1Sets = ev.Sets.Count(s => s.P1 > s.P2);
             var p2Sets = ev.Sets.Count(s => s.P2 > s.P1);
             string? winnerName = null;
             Guid? winnerId = null;
+            bool? p1Won = null;
             if (p1Sets != p2Sets)
             {
-                var p1Wins = p1Sets > p2Sets;
+                p1Won = p1Sets > p2Sets;
+            }
+            else
+            {
+                // Load raw row and check runtime type. EF might materialize base type; ensure context knows derived types.
+                var raw = await _context.MatchEvents
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.Id == ev.Id, cancellationToken);
+                if (raw is OutcomeOnlyMatchEvent o)
+                {
+                    p1Won = o.PlayerOneWon;
+                }
+            }
+
+            if (p1Won is not null)
+            {
+                var p1Wins = p1Won.Value;
                 winnerId = p1Wins ? ev.PlayerOneId : ev.PlayerTwoId;
                 winnerName = p1Wins ? ev.PlayerOneName : ev.PlayerTwoName;
             }

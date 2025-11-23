@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PingPong.Application.Interfaces;
 using PingPong.Application.Models;
+using PingPong.Domain.Entities;
 using PingPong.Infrastructure.Persistence;
 
 namespace PingPong.Infrastructure.Services;
@@ -34,17 +35,17 @@ public sealed class StandingsService : IStandingsService
             _ => new MutablePlayerStats());
 
         // Build effective matches from event log with last-write-wins per (date + normalized pair + ordinal)
+        // SQLite doesn't support DateTimeOffset in ORDER BY, so order in memory
         var events = await _context.MatchEvents
             .AsNoTracking()
-            .OrderBy(e => e.MatchDate)
-            .Select(e => new EventProjection(
-                e.PlayerOneId,
-                e.PlayerTwoId,
-                e.MatchDate,
-                e.Sets.Select(s => new SetProjection(s.SetNumber, s.PlayerOneScore, s.PlayerTwoScore)).ToList(),
-                e.CreatedAt,
-                e.Id))
+            .Include(e => e.Sets)
             .ToListAsync(cancellationToken);
+        
+        events = events
+            .OrderBy(e => e.MatchDate)
+            .ThenBy(e => e.CreatedAt)
+            .ThenBy(e => e.Id)
+            .ToList();
 
         // Group by date + normalized pair, then assign ordinal and pick the last event per ordinal slot
         var comparer = StringComparer.Ordinal;
@@ -61,16 +62,25 @@ public sealed class StandingsService : IStandingsService
             // For each ordinal position, take the last event (if multiple edits for same ordinal)
             for (var ordinal = 0; ordinal < ordered.Count; ordinal++)
             {
-                // Collect all events for this ordinal (ordinal is index in chronological list by this pair/date)
-                var forThisOrdinal = ordered.Where((_, idx) => idx == ordinal).ToList();
-                if (forThisOrdinal.Count == 0) continue;
-                var last = forThisOrdinal.Last();
+                var last = ordered[ordinal];
 
-                var p1Sets = last.Sets.Count(s => s.PlayerOneScore > s.PlayerTwoScore);
-                var p2Sets = last.Sets.Count(s => s.PlayerTwoScore > s.PlayerOneScore);
-                if (p1Sets == p2Sets) continue;
+                bool? p1Won = null;
+                if (last is OutcomeOnlyMatchEvent outcome)
+                {
+                    p1Won = outcome.PlayerOneWon;
+                }
+                else
+                {
+                    var p1Sets = last.Sets.Count(s => s.PlayerOneScore > s.PlayerTwoScore);
+                    var p2Sets = last.Sets.Count(s => s.PlayerTwoScore > s.PlayerOneScore);
+                    if (p1Sets != p2Sets)
+                    {
+                        p1Won = p1Sets > p2Sets;
+                    }
+                }
+                if (p1Won is null) continue;
 
-                effectiveOutcomes.Add(new Outcome(last.PlayerOneId, last.PlayerTwoId, p1Sets, p2Sets));
+                effectiveOutcomes.Add(new Outcome(last.PlayerOneId, last.PlayerTwoId, p1Won.Value ? 1 : 0, p1Won.Value ? 0 : 1));
             }
         }
 

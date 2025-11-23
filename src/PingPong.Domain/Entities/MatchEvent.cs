@@ -1,6 +1,6 @@
 namespace PingPong.Domain.Entities;
 
-public sealed class MatchEvent
+public abstract class MatchEvent
 {
     public Guid Id { get; set; }
 
@@ -29,4 +29,13 @@ public sealed class MatchEvent
     public string? SubmittedBy { get; set; }
 
     public ICollection<MatchEventSet> Sets { get; set; } = new List<MatchEventSet>();
+}
+
+public sealed class ScoredMatchEvent : MatchEvent
+{
+}
+
+public sealed class OutcomeOnlyMatchEvent : MatchEvent
+{
+    public bool PlayerOneWon { get; set; }
 }

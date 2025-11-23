@@ -30,13 +30,14 @@ public sealed class HeadToHeadServiceTests
         context.Players.AddRange(alice, bob);
 
         // Yesterday: Bob beats Alice 3-1
-        var ev1 = new MatchEvent
+        var ev1 = new ScoredMatchEvent
         {
             Id = Guid.NewGuid(),
             PlayerOneId = bob.Id,
             PlayerTwoId = alice.Id,
             MatchDate = yesterday,
             CreatedAt = now,
+            EventType = MatchEventType.Recorded,
             Sets =
             [
                 new MatchEventSet { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 1, PlayerOneScore = 11, PlayerTwoScore = 9 },
@@ -47,13 +48,14 @@ public sealed class HeadToHeadServiceTests
         };
 
         // Today: Alice beats Bob 3-0
-        var ev2 = new MatchEvent
+        var ev2 = new ScoredMatchEvent
         {
             Id = Guid.NewGuid(),
             PlayerOneId = alice.Id,
             PlayerTwoId = bob.Id,
             MatchDate = today,
             CreatedAt = now.AddMinutes(1),
+            EventType = MatchEventType.Recorded,
             Sets =
             [
                 new MatchEventSet { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 1, PlayerOneScore = 11, PlayerTwoScore = 7 },
@@ -111,13 +113,14 @@ public sealed class HeadToHeadServiceTests
         var bob = Player.Create("Bob", now);
         context.Players.AddRange(alice, bob);
 
-        context.MatchEvents.Add(new MatchEvent
+        context.MatchEvents.Add(new ScoredMatchEvent
         {
             Id = Guid.NewGuid(),
             PlayerOneId = alice.Id,
             PlayerTwoId = bob.Id,
             MatchDate = today,
             CreatedAt = now,
+            EventType = MatchEventType.Recorded,
             Sets =
             [
                 new MatchEventSet { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 1, PlayerOneScore = 11, PlayerTwoScore = 8 },

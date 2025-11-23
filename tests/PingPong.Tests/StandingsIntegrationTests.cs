@@ -22,7 +22,7 @@ public sealed class StandingsIntegrationTests : IClassFixture<IntegrationTestWeb
         var client = _factory.CreateClient();
         var matchDate = DateOnly.FromDateTime(DateTime.UtcNow.Date);
 
-        var request = new MatchSubmissionDto(
+        var request = (MatchSubmissionDto)new ScoredMatchSubmissionDto(
             "Alice",
             "Bob",
             matchDate,

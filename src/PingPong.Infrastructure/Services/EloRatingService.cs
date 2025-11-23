@@ -71,10 +71,19 @@ public sealed class EloRatingService : IRatingService
         {
             foreach (var last in ordered)
             {
-                // Determine sets won
-                var p1Sets = last.Sets.Count(s => s.PlayerOneScore > s.PlayerTwoScore);
-                var p2Sets = last.Sets.Count(s => s.PlayerTwoScore > s.PlayerOneScore);
-                if (p1Sets == p2Sets) continue; // ignore invalid/draw
+                bool? p1Won = null;
+                if (last is OutcomeOnlyMatchEvent outcome)
+                {
+                    p1Won = outcome.PlayerOneWon;
+                }
+                else
+                {
+                    var p1Sets = last.Sets.Count(s => s.PlayerOneScore > s.PlayerTwoScore);
+                    var p2Sets = last.Sets.Count(s => s.PlayerTwoScore > s.PlayerOneScore);
+                    if (p1Sets != p2Sets)
+                        p1Won = p1Sets > p2Sets;
+                }
+                if (p1Won is null) continue; // invalid/draw
 
                 var p1Id = last.PlayerOneId;
                 var p2Id = last.PlayerTwoId;
@@ -86,8 +95,7 @@ public sealed class EloRatingService : IRatingService
                 var p2Rating = ratingByPlayerId[p2Id];
 
                 // Winner gets S=1, loser S=0
-                var p1Won = p1Sets > p2Sets;
-                var (p1New, p2New) = ComputeEloUpdate(p1Rating, p2Rating, p1Won);
+                var (p1New, p2New) = ComputeEloUpdate(p1Rating, p2Rating, p1Won.Value);
 
                 ratingByPlayerId[p1Id] = p1New;
                 ratingByPlayerId[p2Id] = p2New;
