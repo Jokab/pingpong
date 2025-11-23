@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using PingPong.Application.Interfaces;
 using PingPong.Application.Models;
 using PingPong.Infrastructure.Persistence;
+using PingPong.Domain.ValueObjects;
 
 namespace PingPong.Infrastructure.Services;
 
@@ -34,47 +35,15 @@ public sealed class StandingsService : IStandingsService
             _ => new MutablePlayerStats());
 
         // Build effective matches from event log with last-write-wins per (date + normalized pair + ordinal)
+        // SQLite doesn't support DateTimeOffset in ORDER BY, so order in memory
         var events = await _context.MatchEvents
             .AsNoTracking()
-            .OrderBy(e => e.MatchDate)
-            .Select(e => new EventProjection(
-                e.PlayerOneId,
-                e.PlayerTwoId,
-                e.MatchDate,
-                e.Sets.Select(s => new SetProjection(s.SetNumber, s.PlayerOneScore, s.PlayerTwoScore)).ToList(),
-                e.CreatedAt,
-                e.Id))
+            .Include(e => e.Sets)
             .ToListAsync(cancellationToken);
 
-        // Group by date + normalized pair, then assign ordinal and pick the last event per ordinal slot
-        var comparer = StringComparer.Ordinal;
-        var effectiveOutcomes = new List<Outcome>();
-        var grouped = events
-            .GroupBy(e => new { e.MatchDate, PairKey = NormalizePair(e.PlayerOneId, e.PlayerTwoId) })
-            .Select(g => new { g.Key.MatchDate, g.Key.PairKey, Items = g.OrderBy(i => i.CreatedAt).ThenBy(i => i.Id).ToList() })
-            .ToList();
+        var outcomes = MatchOutcomeBuilder.BuildEffectiveOutcomes(events);
 
-        foreach (var group in grouped)
-        {
-            // Assign ordinal by chronological item order for the pair on that date
-            var ordered = group.Items;
-            // For each ordinal position, take the last event (if multiple edits for same ordinal)
-            for (var ordinal = 0; ordinal < ordered.Count; ordinal++)
-            {
-                // Collect all events for this ordinal (ordinal is index in chronological list by this pair/date)
-                var forThisOrdinal = ordered.Where((_, idx) => idx == ordinal).ToList();
-                if (forThisOrdinal.Count == 0) continue;
-                var last = forThisOrdinal.Last();
-
-                var p1Sets = last.Sets.Count(s => s.PlayerOneScore > s.PlayerTwoScore);
-                var p2Sets = last.Sets.Count(s => s.PlayerTwoScore > s.PlayerOneScore);
-                if (p1Sets == p2Sets) continue;
-
-                effectiveOutcomes.Add(new Outcome(last.PlayerOneId, last.PlayerTwoId, p1Sets, p2Sets));
-            }
-        }
-
-        foreach (var outcome in effectiveOutcomes)
+        foreach (var outcome in outcomes)
         {
             if (!playerStats.TryGetValue(outcome.PlayerOneId, out var p1))
             {
@@ -89,7 +58,7 @@ public sealed class StandingsService : IStandingsService
 
             p1.MatchesPlayed++;
             p2.MatchesPlayed++;
-            if (outcome.PlayerOneSetsWon > outcome.PlayerTwoSetsWon)
+            if (outcome.PlayerOneWon)
             {
                 p1.Wins++;
                 p2.Losses++;
@@ -130,17 +99,6 @@ public sealed class StandingsService : IStandingsService
     }
 
     private sealed record PlayerProjection(Guid Id, string DisplayName, double Rating);
-
-    private static string NormalizePair(Guid a, Guid b)
-    {
-        return a.CompareTo(b) < 0 ? $"{a:N}-{b:N}" : $"{b:N}-{a:N}";
-    }
-
-    private sealed record EventProjection(Guid PlayerOneId, Guid PlayerTwoId, DateOnly MatchDate, IReadOnlyList<SetProjection> Sets, DateTimeOffset CreatedAt, Guid Id);
-
-    private sealed record SetProjection(int SetNumber, int PlayerOneScore, int PlayerTwoScore);
-
-    private sealed record Outcome(Guid PlayerOneId, Guid PlayerTwoId, int PlayerOneSetsWon, int PlayerTwoSetsWon);
 
     private sealed class MutablePlayerStats
     {

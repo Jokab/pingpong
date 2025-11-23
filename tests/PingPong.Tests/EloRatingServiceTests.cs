@@ -40,19 +40,20 @@ public sealed class EloRatingServiceTests
         context.Players.AddRange(alice, bob);
 
         // Alice beats Bob 3-1
-        context.MatchEvents.Add(new MatchEvent
+        context.MatchEvents.Add(new ScoredMatchEvent
         {
             Id = Guid.NewGuid(),
             PlayerOneId = alice.Id,
             PlayerTwoId = bob.Id,
             MatchDate = today,
             CreatedAt = now,
+            EventType = MatchEventType.Recorded,
             Sets =
             [
-                new MatchEventSet { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 1, PlayerOneScore = 11, PlayerTwoScore = 7 },
-                new MatchEventSet { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 2, PlayerOneScore = 11, PlayerTwoScore = 9 },
-                new MatchEventSet { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 3, PlayerOneScore = 9, PlayerTwoScore = 11 },
-                new MatchEventSet { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 4, PlayerOneScore = 11, PlayerTwoScore = 8 }
+                new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 1, PlayerOneScore = 11, PlayerTwoScore = 7 },
+                new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 2, PlayerOneScore = 11, PlayerTwoScore = 9 },
+                new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 3, PlayerOneScore = 9, PlayerTwoScore = 11 },
+                new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 4, PlayerOneScore = 11, PlayerTwoScore = 8 }
             ]
         });
 

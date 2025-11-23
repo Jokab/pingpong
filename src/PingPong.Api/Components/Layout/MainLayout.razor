@@ -71,7 +71,7 @@
             if (!tutorialSeen)
             {
                 var options = new DialogOptions { CloseOnEscapeKey = true, NoHeader = false };
-                var result = await Dialog.ShowAsync<Onboarding.IdentityTutorialDialog>("Välj din spelare", options);
+                var result = await Dialog.ShowAsync<IdentityTutorialDialog>("Välj din spelare", options);
                 await result.Result;
                 await LoadIdentityAsync();
             }
@@ -88,7 +88,7 @@
     private async Task OpenIdentityDialog()
     {
         var options = new DialogOptions { CloseOnEscapeKey = true, NoHeader = false };
-        var result = await Dialog.ShowAsync<Onboarding.IdentityTutorialDialog>("Välj din spelare", options);
+        var result = await Dialog.ShowAsync<IdentityTutorialDialog>("Välj din spelare", options);
         await result.Result;
         await LoadIdentityAsync();
         StateHasChanged();

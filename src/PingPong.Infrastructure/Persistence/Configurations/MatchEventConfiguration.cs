@@ -42,5 +42,11 @@ public sealed class MatchEventConfiguration : IEntityTypeConfiguration<MatchEven
             .WithMany(m => m.Events)
             .HasForeignKey(e => e.MatchId)
             .OnDelete(DeleteBehavior.NoAction);
+
+        // TPH mapping for scored vs outcome-only events
+        builder
+            .HasDiscriminator<string>("EventKind")
+            .HasValue<ScoredMatchEvent>("Scored")
+            .HasValue<OutcomeOnlyMatchEvent>("Outcome");
     }
 }

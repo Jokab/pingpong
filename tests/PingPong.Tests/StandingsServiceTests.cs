@@ -38,47 +38,50 @@ public sealed class StandingsServiceTests
             new PlayerRating { PlayerId = dave.Id, CurrentRating = 950, LastUpdatedAt = now });
 
         context.MatchEvents.AddRange(
-            new MatchEvent
+            new ScoredMatchEvent
             {
                 Id = Guid.NewGuid(),
                 PlayerOneId = alice.Id,
                 PlayerTwoId = bob.Id,
                 MatchDate = today,
                 CreatedAt = now,
+                EventType = MatchEventType.Recorded,
                 Sets =
                 [
-                    new MatchEventSet { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 1, PlayerOneScore = 11, PlayerTwoScore = 7 },
-                    new MatchEventSet { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 2, PlayerOneScore = 11, PlayerTwoScore = 9 },
-                    new MatchEventSet { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 3, PlayerOneScore = 9, PlayerTwoScore = 11 },
-                    new MatchEventSet { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 4, PlayerOneScore = 11, PlayerTwoScore = 8 }
+                    new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 1, PlayerOneScore = 11, PlayerTwoScore = 7 },
+                    new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 2, PlayerOneScore = 11, PlayerTwoScore = 9 },
+                    new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 3, PlayerOneScore = 9, PlayerTwoScore = 11 },
+                    new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 4, PlayerOneScore = 11, PlayerTwoScore = 8 }
                 ]
             },
-            new MatchEvent
+            new ScoredMatchEvent
             {
                 Id = Guid.NewGuid(),
                 PlayerOneId = alice.Id,
                 PlayerTwoId = carol.Id,
                 MatchDate = today,
                 CreatedAt = now.AddMinutes(1),
+                EventType = MatchEventType.Recorded,
                 Sets =
                 [
-                    new MatchEventSet { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 1, PlayerOneScore = 11, PlayerTwoScore = 3 },
-                    new MatchEventSet { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 2, PlayerOneScore = 11, PlayerTwoScore = 6 },
-                    new MatchEventSet { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 3, PlayerOneScore = 11, PlayerTwoScore = 4 }
+                    new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 1, PlayerOneScore = 11, PlayerTwoScore = 3 },
+                    new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 2, PlayerOneScore = 11, PlayerTwoScore = 6 },
+                    new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 3, PlayerOneScore = 11, PlayerTwoScore = 4 }
                 ]
             },
-            new MatchEvent
+            new ScoredMatchEvent
             {
                 Id = Guid.NewGuid(),
                 PlayerOneId = bob.Id,
                 PlayerTwoId = carol.Id,
                 MatchDate = today,
                 CreatedAt = now.AddMinutes(2),
+                EventType = MatchEventType.Recorded,
                 Sets =
                 [
-                    new MatchEventSet { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 1, PlayerOneScore = 5, PlayerTwoScore = 11 },
-                    new MatchEventSet { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 2, PlayerOneScore = 7, PlayerTwoScore = 11 },
-                    new MatchEventSet { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 3, PlayerOneScore = 9, PlayerTwoScore = 11 }
+                    new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 1, PlayerOneScore = 5, PlayerTwoScore = 11 },
+                    new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 2, PlayerOneScore = 7, PlayerTwoScore = 11 },
+                    new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 3, PlayerOneScore = 9, PlayerTwoScore = 11 }
                 ]
             });
 

@@ -17,7 +17,7 @@ public sealed class PingPongDbContext(DbContextOptions<PingPongDbContext> option
 
     public DbSet<MatchEvent> MatchEvents => Set<MatchEvent>();
 
-    public DbSet<MatchEventSet> MatchEventSets => Set<MatchEventSet>();
+    public DbSet<MatchEventSetEntity> MatchEventSets => Set<MatchEventSetEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

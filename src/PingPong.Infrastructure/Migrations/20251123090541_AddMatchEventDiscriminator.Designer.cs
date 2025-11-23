@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PingPong.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using PingPong.Infrastructure.Persistence;
 namespace PingPong.Infrastructure.Migrations
 {
     [DbContext(typeof(PingPongDbContext))]
-    partial class PingPongDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251123090541_AddMatchEventDiscriminator")]
+    partial class AddMatchEventDiscriminator
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -125,7 +128,7 @@ namespace PingPong.Infrastructure.Migrations
                     b.UseTphMappingStrategy();
                 });
 
-            modelBuilder.Entity("PingPong.Domain.Entities.MatchEventSetEntity", b =>
+            modelBuilder.Entity("PingPong.Domain.Entities.MatchEventSet", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -134,13 +137,10 @@ namespace PingPong.Infrastructure.Migrations
                     b.Property<Guid>("MatchEventId")
                         .HasColumnType("uuid");
 
-                    b.Property<int?>("PlayerOneScore")
+                    b.Property<int>("PlayerOneScore")
                         .HasColumnType("integer");
 
-                    b.Property<bool?>("PlayerOneWon")
-                        .HasColumnType("boolean");
-
-                    b.Property<int?>("PlayerTwoScore")
+                    b.Property<int>("PlayerTwoScore")
                         .HasColumnType("integer");
 
                     b.Property<int>("SetNumber")
@@ -332,7 +332,7 @@ namespace PingPong.Infrastructure.Migrations
                     b.Navigation("SupersededEvent");
                 });
 
-            modelBuilder.Entity("PingPong.Domain.Entities.MatchEventSetEntity", b =>
+            modelBuilder.Entity("PingPong.Domain.Entities.MatchEventSet", b =>
                 {
                     b.HasOne("PingPong.Domain.Entities.MatchEvent", "MatchEvent")
                         .WithMany("Sets")

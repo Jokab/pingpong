@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
 using MudBlazor.Services;
 using PingPong.Api.Components;
 using PingPong.Api.Contracts;
@@ -96,16 +95,40 @@ app.MapPost("/matches", async (MatchSubmissionDto dto, IMatchSubmissionService m
         }
 
         var matchDate = dto.MatchDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
-        var setDtos = dto.Sets ?? Array.Empty<SetScoreDto>();
-        var sets = setDtos
-            .Select((set, index) => new SetScore(index + 1, set.PlayerOneScore, set.PlayerTwoScore))
-            .ToList();
+
+        List<SetScore> sets;
+        List<SetWinner> outcomeOnlySets;
+        bool? playerOneWon = null;
+        switch (dto)
+        {
+            case ScoredMatchSubmissionDto scored:
+                var setDtos = scored.Sets ?? Array.Empty<SetScoreDto>();
+                sets = setDtos.Select((set, index) => new SetScore(index + 1, set.PlayerOneScore, set.PlayerTwoScore)).ToList();
+                outcomeOnlySets = new List<SetWinner>();
+                break;
+            case OutcomeOnlyMatchSubmissionDto outcome:
+                sets = new List<SetScore>();
+                outcomeOnlySets = (outcome.Sets ?? Array.Empty<SetWinnerDto>())
+                    .Select(s => new SetWinner(s.SetNumber, s.PlayerOneWon))
+                    .ToList();
+                playerOneWon = outcome.PlayerOneWon;
+                break;
+            default:
+                return Results.BadRequest(new { error = "Unknown submission kind." });
+        }
+
+        if (sets.Count == 0 && outcomeOnlySets.Count == 0 && playerOneWon is null)
+        {
+            return Results.BadRequest(new { error = "Provide either sets, outcome-only set winners, or PlayerOneWon." });
+        }
 
         var request = new MatchSubmissionRequest(
             dto.PlayerOneName,
             dto.PlayerTwoName,
             matchDate,
             sets,
+            outcomeOnlySets,
+            playerOneWon,
             dto.SubmittedBy);
 
         try
@@ -163,6 +186,69 @@ app.MapPost("/api/players", async (PlayerCreateDto dto, IPlayerDirectory directo
     })
     .WithName("CreatePlayer");
     //.DisableAntiforgery(); // Alternative: disable antiforgery on this endpoint.
+
+app.MapGet("/api/suggestions/opponents", async (
+        string? me,
+        int? take,
+        PingPong.Infrastructure.Persistence.PingPongDbContext db,
+        CancellationToken ct) =>
+    {
+        var top = take.GetValueOrDefault(5);
+        top = top <= 0 || top > 20 ? 5 : top;
+
+        Guid? meId = null;
+        if (!string.IsNullOrWhiteSpace(me))
+        {
+            var name = me.Trim();
+            meId = await db.Players
+                .AsNoTracking()
+                .Where(p => p.DisplayName.ToLower() == name.ToLower())
+                .Select(p => (Guid?)p.Id)
+                .FirstOrDefaultAsync(ct);
+        }
+
+        var suggestions = new List<(Guid id, string name, int count)>();
+        if (meId is not null)
+        {
+            var id = meId.Value;
+            suggestions = await db.MatchEvents
+                .AsNoTracking()
+                .Where(e => e.PlayerOneId == id || e.PlayerTwoId == id)
+                .Select(e => e.PlayerOneId == id ? e.PlayerTwoId : e.PlayerOneId)
+                .GroupBy(x => x)
+                .Select(g => new { OpponentId = g.Key, C = g.Count() })
+                .OrderByDescending(x => x.C)
+                .ThenBy(x => x.OpponentId)
+                .Take(top)
+                .Join(db.Players.AsNoTracking(), x => x.OpponentId, p => p.Id, (x, p) => new { p.Id, p.DisplayName, x.C })
+                .Select(x => new { x.Id, x.DisplayName, x.C })
+                .ToListAsync(ct)
+                .ContinueWith(t => t.Result.Select(r => (r.Id, r.DisplayName, r.C)).ToList(), ct);
+        }
+
+        if (suggestions.Count < top)
+        {
+            var exclude = meId.HasValue ? new HashSet<Guid> { meId.Value } : new HashSet<Guid>();
+            var fill = await db.MatchEvents
+                .AsNoTracking()
+                .SelectMany(e => new[] { e.PlayerOneId, e.PlayerTwoId })
+                .Where(pid => !exclude.Contains(pid))
+                .GroupBy(pid => pid)
+                .Select(g => new { PlayerId = g.Key, C = g.Count() })
+                .OrderByDescending(x => x.C)
+                .ThenBy(x => x.PlayerId)
+                .Take(top - suggestions.Count)
+                .Join(db.Players.AsNoTracking(), x => x.PlayerId, p => p.Id, (x, p) => new { p.Id, p.DisplayName, x.C })
+                .Select(x => new { x.Id, x.DisplayName, x.C })
+                .ToListAsync(ct)
+                .ContinueWith(t => t.Result.Select(r => (r.Id, r.DisplayName, r.C)).ToList(), ct);
+
+            suggestions.AddRange(fill);
+        }
+
+        return Results.Ok(new { items = suggestions.Select(s => new { id = s.id, displayName = s.name, count = s.count }).ToList() });
+    })
+    .WithName("SuggestOpponents");
 
 app.MapGet("/api/standings", async (IStandingsService standingsService, CancellationToken ct) =>
     {

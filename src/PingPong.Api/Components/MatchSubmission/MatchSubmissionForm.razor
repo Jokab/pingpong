@@ -28,6 +28,21 @@
             </AfterItemsTemplate>
         </MudAutocomplete>
 
+        @if (_suggestions.Count > 0)
+        {
+            <MudStack Spacing="1">
+                <MudText Typo="Typo.subtitle2">Snabbval</MudText>
+                <MudStack Row="true" Spacing="1">
+                    @foreach (var s in _suggestions)
+                    {
+                        <MudChip T="string" OnClick="@(() => { _model.PlayerTwo = s.displayName; StateHasChanged(); })">
+                            @s.displayName
+                        </MudChip>
+                    }
+                </MudStack>
+            </MudStack>
+        }
+
         <MudAutocomplete Value="_model.PlayerTwo" ValueChanged="@((string? sel) => OnPlayerSelected(sel, isPlayerOne: false))" Label="Spelare två" Dense="true"
                          SearchFunc="@((string value, CancellationToken token) => SearchPlayersAsync(value, token))" ToStringFunc="(s) => s"
                          ResetValueOnEmptyText="false" Clearable="true"
@@ -52,36 +67,63 @@
         <MudDatePicker Label="Matchdatum" @bind-Date="_model.MatchDate" />
 
         <MudStack Spacing="1">
-            <MudPaper Class="pa-2">
-                <MudStack Spacing="1">
-                    @foreach (var set in _model.Sets)
-                    {
-                        <MudGrid>
-                            <MudItem xs="12" sm="4">
-                                <MudText Typo="Typo.subtitle2">Set @set.Number</MudText>
-                            </MudItem>
-                            <MudItem xs="12" sm="4">
-                                <MudNumericField @bind-Value="set.PlayerOneScore" Label="Spelare ett" Min="0" />
-                            </MudItem>
-                            <MudItem xs="12" sm="4">
-                                <MudNumericField @bind-Value="set.PlayerTwoScore" Label="Spelare två" Min="0" />
-                            </MudItem>
-                        </MudGrid>
-                        <MudDivider Class="my-1" />
-                    }
-
-                    <MudStack Row="true" Justify="Justify.FlexStart" Spacing="1">
-                        <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="AddSet" StartIcon="@Icons.Material.Filled.Add">
-                            Lägg till set
-                        </MudButton>
-                        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Disabled="_model.Sets.Count <= 1"
-                                   OnClick="RemoveSet" StartIcon="@Icons.Material.Filled.Remove">
-                            Ta bort set
-                        </MudButton>
-                    </MudStack>
-                </MudStack>
-            </MudPaper>
+            <MudText Typo="Typo.subtitle2">Typ av match</MudText>
+            <MudButtonGroup Color="Color.Primary">
+                <MudButton Variant="@(_submissionMode == SubmissionMode.OutcomeOnly ? Variant.Filled : Variant.Outlined)" 
+                          OnClick="@(() => OnSubmissionModeChanged(SubmissionMode.OutcomeOnly))">
+                    Endast resultat
+                </MudButton>
+                <MudButton Variant="@(_submissionMode == SubmissionMode.Scored ? Variant.Filled : Variant.Outlined)" 
+                          OnClick="@(() => OnSubmissionModeChanged(SubmissionMode.Scored))">
+                    Med set-poäng
+                </MudButton>
+            </MudButtonGroup>
         </MudStack>
+
+        @if (_submissionMode == SubmissionMode.OutcomeOnly)
+        {
+            <MudStack Spacing="1">
+                <MudText Typo="Typo.subtitle2">Vinnare</MudText>
+                <MudRadioGroup T="Winner" selectedOption="_selectedWinner" selectedOptionChanged="@((Winner w) => { _selectedWinner = w; _model.Winner = w; StateHasChanged(); })">
+                    <MudRadio T="Winner" option="@Winner.PlayerOne" Color="Color.Primary">@(_model.PlayerOne ?? "Spelare ett")</MudRadio>
+                    <MudRadio T="Winner" option="@Winner.PlayerTwo" Color="Color.Primary">@(_model.PlayerTwo ?? "Spelare två")</MudRadio>
+                </MudRadioGroup>
+            </MudStack>
+        }
+        else
+        {
+            <MudStack Spacing="1">
+                <MudPaper Class="pa-2">
+                    <MudStack Spacing="1">
+                        @foreach (var set in _model.Sets)
+                        {
+                            <MudGrid>
+                                <MudItem xs="12" sm="4">
+                                    <MudText Typo="Typo.subtitle2">Set @set.Number</MudText>
+                                </MudItem>
+                                <MudItem xs="12" sm="4">
+                                    <MudNumericField @bind-Value="set.PlayerOneScore" Label="Spelare ett" Min="0" />
+                                </MudItem>
+                                <MudItem xs="12" sm="4">
+                                    <MudNumericField @bind-Value="set.PlayerTwoScore" Label="Spelare två" Min="0" />
+                                </MudItem>
+                            </MudGrid>
+                            <MudDivider Class="my-1" />
+                        }
+
+                        <MudStack Row="true" Justify="Justify.FlexStart" Spacing="1">
+                            <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="AddSet" StartIcon="@Icons.Material.Filled.Add">
+                                Lägg till set
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Disabled="_model.Sets.Count <= 1"
+                                       OnClick="RemoveSet" StartIcon="@Icons.Material.Filled.Remove">
+                                Ta bort set
+                            </MudButton>
+                        </MudStack>
+                    </MudStack>
+                </MudPaper>
+            </MudStack>
+        }
 
         @if (!string.IsNullOrWhiteSpace(_error))
         {
@@ -120,10 +162,15 @@
     private bool _isSubmitting;
     private string? _error;
     private bool _hasPrefilledIdentity;
+    private string? _identityName;
+    private List<Suggestion> _suggestions = new();
+    private SubmissionMode _submissionMode = SubmissionMode.OutcomeOnly;
+    private Winner _selectedWinner = Winner.PlayerOne; // UI binding value, defaults to PlayerOne for display
 
     protected override async Task OnInitializedAsync()
     {
-        if (_model.Sets.Count == 0)
+        // Only initialize sets if we're in scored mode
+        if (_submissionMode == SubmissionMode.Scored && _model.Sets.Count == 0)
         {
             for (var i = 0; i < 3; i++)
             {
@@ -136,13 +183,15 @@
         
         // Subscribe to identity changes
         IdentityService.IdentityChanged += OnIdentityChanged;
+        // await LoadSuggestionsAsync();
     }
 
     private async Task LoadIdentityAsync()
     {
+        var identityName = await IdentityService.GetIdentityNameAsync();
+        _identityName = identityName;
         if (string.IsNullOrWhiteSpace(_model.PlayerOne) && !_hasPrefilledIdentity)
         {
-            var identityName = await IdentityService.GetIdentityNameAsync();
             if (!string.IsNullOrWhiteSpace(identityName))
             {
                 _model.PlayerOne = identityName;
@@ -157,6 +206,7 @@
         if (_hasPrefilledIdentity && string.IsNullOrWhiteSpace(_model.PlayerOne))
         {
             var identityName = await IdentityService.GetIdentityNameAsync();
+            _identityName = identityName;
             if (!string.IsNullOrWhiteSpace(identityName))
             {
                 _model.PlayerOne = identityName;
@@ -196,12 +246,52 @@
         _model.Sets.Add(new SetDraft(nextNumber));
     }
 
+    private void OnSubmissionModeChanged(SubmissionMode mode)
+    {
+        if (_submissionMode == mode) return;
+        
+        _submissionMode = mode;
+        if (_submissionMode == SubmissionMode.Scored && _model.Sets.Count == 0)
+        {
+            // Initialize sets when switching to scored mode
+            for (var i = 0; i < 3; i++)
+            {
+                AddSet();
+            }
+        }
+        else if (_submissionMode == SubmissionMode.OutcomeOnly)
+        {
+            // Clear sets when switching to outcome-only mode
+            _model.Sets.Clear();
+        }
+        StateHasChanged();
+    }
+
+
     private void RemoveSet()
     {
         if (_model.Sets.Count > 1)
         {
             _model.Sets.RemoveAt(_model.Sets.Count - 1);
         }
+    }
+
+    private async Task LoadSuggestionsAsync()
+    {
+        try
+        {
+            var me = _identityName;
+            var url = string.IsNullOrWhiteSpace(me)
+                ? "/api/suggestions/opponents?take=5"
+                : $"/api/suggestions/opponents?me={Uri.EscapeDataString(me)}&take=5";
+            var resp = await Http.GetFromJsonAsync<SuggestionsResponse>(url);
+            _suggestions = resp?.items ?? new List<Suggestion>();
+        }
+        catch
+        {
+            _suggestions.Clear();
+        }
+        StateHasChanged();
     }
 
     private async Task SubmitAsync()
@@ -222,22 +312,40 @@
             _error = "Spelarna måste vara olika.";
             return;
         }
-        if (_model.Sets.Count == 0)
+
+        MatchSubmissionDto dto;
+        if (_submissionMode == SubmissionMode.OutcomeOnly)
         {
-            _error = "Lägg till minst ett set.";
-            return;
+            // Use _selectedWinner which is always set (defaults to PlayerOne)
+            // _model.Winner is set when user interacts, but we can also use _selectedWinner directly
+            var playerOneWon = _selectedWinner == Winner.PlayerOne;
+            dto = (MatchSubmissionDto)new OutcomeOnlyMatchSubmissionDto(
+                p1!,
+                p2!,
+                _model.MatchDate.HasValue ? DateOnly.FromDateTime(_model.MatchDate.Value) : DateOnly.FromDateTime(DateTime.UtcNow),
+                playerOneWon,
+                Sets: null,
+                SubmittedBy: "ui");
         }
+        else
+        {
+            if (_model.Sets.Count == 0)
+            {
+                _error = "Lägg till minst ett set.";
+                return;
+            }
 
-        var sets = _model.Sets
-            .Select(s => new SetScoreDto(s.PlayerOneScore, s.PlayerTwoScore))
-            .ToList();
+            var sets = _model.Sets
+                .Select(s => new SetScoreDto(s.PlayerOneScore, s.PlayerTwoScore))
+                .ToList();
 
-        var dto = new MatchSubmissionDto(
-            p1!,
-            p2!,
-            _model.MatchDate.HasValue ? DateOnly.FromDateTime(_model.MatchDate.Value) : DateOnly.FromDateTime(DateTime.UtcNow),
-            sets,
-            "ui");
+            dto = (MatchSubmissionDto)new ScoredMatchSubmissionDto(
+                p1!,
+                p2!,
+                _model.MatchDate.HasValue ? DateOnly.FromDateTime(_model.MatchDate.Value) : DateOnly.FromDateTime(DateTime.UtcNow),
+                sets,
+                "ui");
+        }
 
         try
         {
@@ -255,9 +363,14 @@
             Snackbar.Add("Match inskickad!", Severity.Success);
             await OnSubmitted.InvokeAsync();
 
-            // Reset simple fields but keep players for consecutive matches
+            // Reset form but keep players for consecutive matches
+            _model.Winner = null;
+            _selectedWinner = Winner.PlayerOne;
             _model.Sets.Clear();
-            for (var i = 0; i < 3; i++) AddSet();
+            if (_submissionMode == SubmissionMode.Scored)
+            {
+                for (var i = 0; i < 3; i++) AddSet();
+            }
         }
         catch (Exception ex)
         {
@@ -280,6 +393,20 @@
         public DateTime? MatchDate { get; set; } = DateTime.Today;
 
         public List<SetDraft> Sets { get; } = new();
+
+        public Winner? Winner { get; set; }
+    }
+
+    private enum SubmissionMode
+    {
+        OutcomeOnly,
+        Scored
+    }
+
+    private enum Winner
+    {
+        PlayerOne,
+        PlayerTwo
     }
 
     private sealed class SetDraft
@@ -341,4 +468,6 @@
     private sealed record PlayerSuggestion(Guid id, string displayName, double score, bool isExact);
     private sealed record PlayerCreate(string DisplayName);
     private sealed record PlayerCreated(Guid id, string displayName);
+    private sealed record Suggestion(Guid id, string displayName, int count);
+    private sealed record SuggestionsResponse(List<Suggestion> items);
 }
