@@ -331,7 +331,7 @@
 
         MatchSubmissionDto dto;
         var submitterName = await IdentityService.GetIdentityNameAsync();
-        var submittedBy = string.IsNullOrWhiteSpace(submitterName) ? "anonym" : submitterName!.Trim();
+        var submittedBy = string.IsNullOrWhiteSpace(submitterName) ? "anonym" : submitterName.Trim();
 
         if (_submissionMode == SubmissionMode.OutcomeOnly)
         {
@@ -345,8 +345,8 @@
                 var outcomeSets = BuildOutcomeSetDtos(playerOneSets, playerTwoSets);
 
             dto = (MatchSubmissionDto)new OutcomeOnlyMatchSubmissionDto(
-                p1!,
-                p2!,
+                p1,
+                p2,
                 _model.MatchDate.HasValue ? DateOnly.FromDateTime(_model.MatchDate.Value) : DateOnly.FromDateTime(DateTime.UtcNow),
                 playerOneWon,
                     Sets: outcomeSets,
@@ -365,8 +365,8 @@
                 .ToList();
 
             dto = (MatchSubmissionDto)new ScoredMatchSubmissionDto(
-                p1!,
-                p2!,
+                p1,
+                p2,
                 _model.MatchDate.HasValue ? DateOnly.FromDateTime(_model.MatchDate.Value) : DateOnly.FromDateTime(DateTime.UtcNow),
                 sets,
                 submittedBy);

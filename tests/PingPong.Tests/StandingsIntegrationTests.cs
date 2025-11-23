@@ -48,8 +48,8 @@ public sealed class StandingsIntegrationTests : IClassFixture<IntegrationTestWeb
         });
 
         Assert.NotNull(payload);
-        Assert.Contains(payload!.Items, r => r.PlayerName == "Alice" && r.MatchesPlayed == 1);
-        Assert.Contains(payload!.Items, r => r.PlayerName == "Bob" && r.MatchesPlayed == 1);
+        Assert.Contains(payload.Items, r => r.PlayerName == "Alice" && r.MatchesPlayed == 1);
+        Assert.Contains(payload.Items, r => r.PlayerName == "Bob" && r.MatchesPlayed == 1);
     }
 
     private sealed class StandingsPayload

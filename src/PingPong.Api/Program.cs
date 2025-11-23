@@ -84,11 +84,6 @@ app.MapRazorComponents<App>()
 
 app.MapPost("/matches", async (MatchSubmissionDto dto, IMatchSubmissionService matchService, CancellationToken cancellationToken) =>
     {
-        if (dto is null)
-        {
-            return Results.BadRequest(new { error = "Payload is required." });
-        }
-
         if (string.IsNullOrWhiteSpace(dto.PlayerOneName) || string.IsNullOrWhiteSpace(dto.PlayerTwoName))
         {
             return Results.BadRequest(new { error = "Both player names are required." });
@@ -102,13 +97,12 @@ app.MapPost("/matches", async (MatchSubmissionDto dto, IMatchSubmissionService m
         switch (dto)
         {
             case ScoredMatchSubmissionDto scored:
-                var setDtos = scored.Sets ?? Array.Empty<SetScoreDto>();
-                sets = setDtos.Select((set, index) => new SetScore(index + 1, set.PlayerOneScore, set.PlayerTwoScore)).ToList();
-                outcomeOnlySets = new List<SetWinner>();
+                sets = scored.Sets.Select((set, index) => new SetScore(index + 1, set.PlayerOneScore, set.PlayerTwoScore)).ToList();
+                outcomeOnlySets = [];
                 break;
             case OutcomeOnlyMatchSubmissionDto outcome:
-                sets = new List<SetScore>();
-                outcomeOnlySets = (outcome.Sets ?? Array.Empty<SetWinnerDto>())
+                sets = [];
+                outcomeOnlySets = (outcome.Sets ?? [])
                     .Select(s => new SetWinner(s.SetNumber, s.PlayerOneWon))
                     .ToList();
                 playerOneWon = outcome.PlayerOneWon;
@@ -179,7 +173,7 @@ app.MapGet("/api/players", async (string? query, int? size, IPlayerDirectory dir
 
 app.MapPost("/api/players", async (PlayerCreateDto dto, IPlayerDirectory directory, CancellationToken ct) =>
     {
-        if (dto is null || string.IsNullOrWhiteSpace(dto.DisplayName))
+        if (string.IsNullOrWhiteSpace(dto.DisplayName))
             return Results.BadRequest(new { error = "displayName is required" });
         var player = await directory.AddPlayerAsync(dto.DisplayName, ct);
         return Results.Created($"/api/players/{player.Id}", new { id = player.Id, displayName = player.DisplayName });
@@ -194,7 +188,7 @@ app.MapGet("/api/suggestions/opponents", async (
         CancellationToken ct) =>
     {
         var top = take.GetValueOrDefault(5);
-        top = top <= 0 || top > 20 ? 5 : top;
+        top = top is <= 0 or > 20 ? 5 : top;
 
         Guid? meId = null;
         if (!string.IsNullOrWhiteSpace(me))
@@ -246,7 +240,9 @@ app.MapGet("/api/suggestions/opponents", async (
             suggestions.AddRange(fill);
         }
 
-        return Results.Ok(new { items = suggestions.Select(s => new { id = s.id, displayName = s.name, count = s.count }).ToList() });
+        return Results.Ok(new { items = suggestions.Select(s => new {
+            s.id, displayName = s.name,
+            s.count }).ToList() });
     })
     .WithName("SuggestOpponents");
 

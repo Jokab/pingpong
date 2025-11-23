@@ -50,7 +50,7 @@ public sealed class MatchSubmissionTests : IClassFixture<IntegrationTestWebAppli
         var dbContext = scope.ServiceProvider.GetRequiredService<PingPongDbContext>();
         var evt = await dbContext.MatchEvents
             .Include(e => e.Sets)
-            .SingleAsync(e => e.Id == payload!.EventId);
+            .SingleAsync(e => e.Id == payload.EventId);
 
         Assert.Equal(today, evt.MatchDate);
         Assert.Equal(3, evt.Sets.Count);
@@ -89,7 +89,7 @@ public sealed class MatchSubmissionTests : IClassFixture<IntegrationTestWebAppli
         var dbContext = scope.ServiceProvider.GetRequiredService<PingPongDbContext>();
         var evt = await dbContext.MatchEvents
             .Include(e => e.Sets)
-            .SingleAsync(e => e.Id == payload!.EventId);
+            .SingleAsync(e => e.Id == payload.EventId);
 
         Assert.Equal(today, evt.MatchDate);
         Assert.Equal("outcome-test", evt.SubmittedBy);
@@ -143,7 +143,7 @@ public sealed class MatchSubmissionTests : IClassFixture<IntegrationTestWebAppli
         var dbContext = scope.ServiceProvider.GetRequiredService<PingPongDbContext>();
         var evt = await dbContext.MatchEvents
             .Include(e => e.Sets)
-            .SingleAsync(e => e.Id == payload!.EventId);
+            .SingleAsync(e => e.Id == payload.EventId);
 
         var outcomeEvent = Assert.IsType<OutcomeOnlyMatchEvent>(evt);
         Assert.Equal(3, evt.Sets.Count);

@@ -16,7 +16,7 @@ public sealed class EloRatingServiceTests
             { "Ratings:BaseRating", baseRating.ToString(System.Globalization.CultureInfo.InvariantCulture) },
             { "Ratings:KFactor", kFactor.ToString(System.Globalization.CultureInfo.InvariantCulture) }
         };
-        return new ConfigurationBuilder().AddInMemoryCollection(inMemorySettings!).Build();
+        return new ConfigurationBuilder().AddInMemoryCollection(inMemorySettings).Build();
     }
 
     [Fact]
