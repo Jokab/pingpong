@@ -177,8 +177,8 @@
     private bool _isSubmitting;
     private string? _error;
     private bool _hasPrefilledIdentity;
-    private string? _identityName;
     private List<Suggestion> _suggestions = new();
+    private string? _lastSuggestionsSource;
     private SubmissionMode _submissionMode = SubmissionMode.OutcomeOnly;
     private string _outcomeSetsInput = string.Empty;
     private static readonly CultureInfo SwedishCulture = CultureInfo.GetCultureInfo("sv-SE");
@@ -199,21 +199,18 @@
         
         // Subscribe to identity changes
         IdentityService.IdentityChanged += OnIdentityChanged;
-        // await LoadSuggestionsAsync();
     }
 
     private async Task LoadIdentityAsync()
     {
         var identityName = await IdentityService.GetIdentityNameAsync();
-        _identityName = identityName;
-        if (string.IsNullOrWhiteSpace(_model.PlayerOne) && !_hasPrefilledIdentity)
+        if (string.IsNullOrWhiteSpace(_model.PlayerOne) && !_hasPrefilledIdentity && !string.IsNullOrWhiteSpace(identityName))
         {
-            if (!string.IsNullOrWhiteSpace(identityName))
-            {
-                _model.PlayerOne = identityName;
-                _hasPrefilledIdentity = true;
-            }
+            _model.PlayerOne = identityName;
+            _hasPrefilledIdentity = true;
         }
+
+        await RefreshSuggestionsAsync();
     }
 
     private async void OnIdentityChanged(object? sender, EventArgs e)
@@ -222,11 +219,10 @@
         if (_hasPrefilledIdentity && string.IsNullOrWhiteSpace(_model.PlayerOne))
         {
             var identityName = await IdentityService.GetIdentityNameAsync();
-            _identityName = identityName;
             if (!string.IsNullOrWhiteSpace(identityName))
             {
                 _model.PlayerOne = identityName;
-                await InvokeAsync(StateHasChanged);
+                await RefreshSuggestionsAsync();
             }
         }
     }
@@ -292,22 +288,43 @@
         }
     }
 
-    private async Task LoadSuggestionsAsync()
+    private Task RefreshSuggestionsAsync() => FetchSuggestionsAsync(_model.PlayerOne);
+
+    private async Task FetchSuggestionsAsync(string? playerOneName)
     {
+        var seed = string.IsNullOrWhiteSpace(playerOneName) ? null : playerOneName.Trim();
+
+        if (seed is null)
+        {
+            if (_suggestions.Count > 0)
+            {
+                _suggestions.Clear();
+                _lastSuggestionsSource = null;
+                await InvokeAsync(StateHasChanged);
+            }
+            return;
+        }
+
+        if (string.Equals(_lastSuggestionsSource, seed, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        _lastSuggestionsSource = seed;
+
         try
         {
-            var me = _identityName;
-            var url = string.IsNullOrWhiteSpace(me)
-                ? "/api/suggestions/opponents?take=5"
-                : $"/api/suggestions/opponents?me={Uri.EscapeDataString(me)}&take=5";
+            var url = $"/api/suggestions/opponents?me={Uri.EscapeDataString(seed!)}&take=3";
             var resp = await Http.GetFromJsonAsync<SuggestionsResponse>(url);
             _suggestions = resp?.items ?? new List<Suggestion>();
         }
         catch
         {
             _suggestions.Clear();
+            _lastSuggestionsSource = null;
         }
-        StateHasChanged();
+
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task SubmitAsync()
@@ -446,7 +463,16 @@
         response.EnsureSuccessStatusCode();
         var created = await response.Content.ReadFromJsonAsync<PlayerCreated>();
         if (created is null) return;
-        if (isPlayerOne) _model.PlayerOne = created.displayName; else _model.PlayerTwo = created.displayName;
+        if (isPlayerOne)
+        {
+            _model.PlayerOne = created.displayName;
+            await RefreshSuggestionsAsync();
+        }
+        else
+        {
+            _model.PlayerTwo = created.displayName;
+        }
+
         Snackbar.Add($"La till spelare '{created.displayName}'", Severity.Success);
         StateHasChanged();
     }
@@ -460,6 +486,7 @@
             {
                 _model.PlayerOne = null;
                 _hasPrefilledIdentity = false; // User intentionally cleared, don't auto-refill
+                await RefreshSuggestionsAsync();
             }
             else
             {
@@ -477,8 +504,15 @@
             await AddNewPlayerAsync(isPlayerOne);
             return;
         }
-
-        if (isPlayerOne) _model.PlayerOne = selection; else _model.PlayerTwo = selection;
+        if (isPlayerOne)
+        {
+            _model.PlayerOne = selection;
+            await RefreshSuggestionsAsync();
+        }
+        else
+        {
+            _model.PlayerTwo = selection;
+        }
     }
 
     private sealed record PlayerSuggestion(Guid id, string displayName, double score, bool isExact);

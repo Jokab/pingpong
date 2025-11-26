@@ -222,11 +222,15 @@ app.MapGet("/api/suggestions/opponents", async (
 
         if (suggestions.Count < top)
         {
-            var exclude = meId.HasValue ? new HashSet<Guid> { meId.Value } : new HashSet<Guid>();
-            var fill = await db.MatchEvents
+            var excludeList = meId.HasValue ? new List<Guid> { meId.Value } : new List<Guid>();
+
+            var playerIdsQuery = db.MatchEvents
                 .AsNoTracking()
-                .SelectMany(e => new[] { e.PlayerOneId, e.PlayerTwoId })
-                .Where(pid => !exclude.Contains(pid))
+                .Select(e => e.PlayerOneId)
+                .Concat(db.MatchEvents.AsNoTracking().Select(e => e.PlayerTwoId));
+
+            var fill = await playerIdsQuery
+                .Where(pid => !excludeList.Contains(pid))
                 .GroupBy(pid => pid)
                 .Select(g => new { PlayerId = g.Key, C = g.Count() })
                 .OrderByDescending(x => x.C)
