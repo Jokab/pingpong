@@ -61,27 +61,41 @@
         </div>
 
         <div class="standings-mobile">
-            @foreach (var row in _rows)
-            {
-                <div class="standings-mobile-row">
-                    <div class="standings-mobile-main">
-                        <span class="standings-mobile-rank">#@row.Position</span>
-                        <MudAvatar Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled" Class="standings-mobile-avatar">
-                            @row.Initials
-                        </MudAvatar>
-                        <MudLink Href="@($"/players/{row.PlayerId}")" Underline="Underline.None" Class="standings-mobile-name">
-                            @row.Name
-                        </MudLink>
-                        <span class="standings-mobile-rating">@row.Rating.ToString("F0")</span>
-                    </div>
-                    <div class="standings-mobile-stats">
-                        <span>@row.MatchesPlayed matcher</span>
-                        <span class="standings-mobile-wins">@row.Wins V</span>
-                        <span class="standings-mobile-losses">@row.Losses F</span>
-                        <span>@row.WinPercentage.ToString("P0")</span>
-                    </div>
-                </div>
-            }
+            <MudStack Spacing="0">
+                @* Header row *@
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="py-2 px-1">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary" Style="min-width: 28px;">#</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary" Style="flex: 1; padding-left: 40px;">Spelare</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary" Style="min-width: 44px; text-align: right;">Poäng</MudText>
+                </MudStack>
+                <MudDivider />
+
+                @foreach (var row in _rows)
+                {
+                    <MudStack Spacing="1" Class="py-3 px-1">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary" Style="min-width: 28px; font-weight: 600;">
+                                @row.Position
+                            </MudText>
+                            <MudAvatar Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled">
+                                @row.Initials
+                            </MudAvatar>
+                            <MudLink Href="@($"/players/{row.PlayerId}")" Underline="Underline.None" Style="flex: 1;">
+                                <MudText Typo="Typo.body1" Class="font-weight-medium">@row.Name</MudText>
+                            </MudLink>
+                            <MudText Typo="Typo.body1" Class="font-weight-bold" Style="min-width: 44px; text-align: right;">
+                                @row.Rating.ToString("F0")
+                            </MudText>
+                        </MudStack>
+                        <MudStack Row="true" Spacing="2" Class="pl-10">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@row.Wins–@row.Losses</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">·</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@row.WinPercentage.ToString("P0") vinst</MudText>
+                        </MudStack>
+                    </MudStack>
+                    <MudDivider />
+                }
+            </MudStack>
         </div>
     </MudStack>
 </MudPaper>

@@ -2,7 +2,7 @@
 @inject IDialogService Dialog
 @inject UserIdentityService IdentityService
 
-<MudThemeProvider />
+<MudThemeProvider Theme="_theme" />
 <MudDialogProvider />
 <MudSnackbarProvider />
 <MudPopoverProvider />
@@ -55,6 +55,30 @@
 @code {
     private bool _drawerOpen = true;
     private string? _identityName;
+
+    private readonly MudTheme _theme = new()
+    {
+        PaletteLight = new PaletteLight
+        {
+            Primary = "#5E35B1",        // Deep purple
+            Secondary = "#78909C",       // Blue-gray (muted, not pink!)
+            Tertiary = "#26A69A",        // Teal accent
+            Info = "#2196F3",
+            Success = "#4CAF50",
+            Warning = "#FF9800",
+            Error = "#E53935",
+            AppbarBackground = "#5E35B1",
+            DrawerBackground = "#5E35B1",
+            DrawerText = "#FFFFFF",
+            DrawerIcon = "#FFFFFF",
+        },
+        PaletteDark = new PaletteDark
+        {
+            Primary = "#7E57C2",
+            Secondary = "#90A4AE",
+            Tertiary = "#4DB6AC",
+        }
+    };
 
     private void ToggleDrawer()
     {
