@@ -19,6 +19,12 @@ public sealed class PingPongDbContext(DbContextOptions<PingPongDbContext> option
 
     public DbSet<MatchEventSetEntity> MatchEventSets => Set<MatchEventSetEntity>();
 
+    public DbSet<Tournament> Tournaments => Set<Tournament>();
+
+    public DbSet<TournamentParticipant> TournamentParticipants => Set<TournamentParticipant>();
+
+    public DbSet<TournamentFixture> TournamentFixtures => Set<TournamentFixture>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(PingPongDbContext).Assembly);

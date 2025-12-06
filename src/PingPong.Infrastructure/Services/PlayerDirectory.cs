@@ -116,6 +116,7 @@ public sealed class PlayerDirectory : IPlayerDirectory
         var now = DateTimeOffset.UtcNow;
         var player = Player.Create(displayName, now);
         await _context.Players.AddAsync(player, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
 
         return player;
     }

@@ -9,14 +9,16 @@ public abstract record MatchSubmissionDto(
     string PlayerOneName,
     string PlayerTwoName,
     DateOnly? MatchDate,
-    string? SubmittedBy);
+    string? SubmittedBy,
+    Guid? TournamentFixtureId);
 
 public sealed record ScoredMatchSubmissionDto(
     string PlayerOneName,
     string PlayerTwoName,
     DateOnly? MatchDate,
     IReadOnlyList<SetScoreDto> Sets,
-    string? SubmittedBy) : MatchSubmissionDto(PlayerOneName, PlayerTwoName, MatchDate, SubmittedBy);
+    string? SubmittedBy,
+    Guid? TournamentFixtureId) : MatchSubmissionDto(PlayerOneName, PlayerTwoName, MatchDate, SubmittedBy, TournamentFixtureId);
 
 public sealed record OutcomeOnlyMatchSubmissionDto(
     string PlayerOneName,
@@ -24,7 +26,8 @@ public sealed record OutcomeOnlyMatchSubmissionDto(
     DateOnly? MatchDate,
     bool PlayerOneWon,
     IReadOnlyList<SetWinnerDto>? Sets,
-    string? SubmittedBy) : MatchSubmissionDto(PlayerOneName, PlayerTwoName, MatchDate, SubmittedBy);
+    string? SubmittedBy,
+    Guid? TournamentFixtureId) : MatchSubmissionDto(PlayerOneName, PlayerTwoName, MatchDate, SubmittedBy, TournamentFixtureId);
 
 public sealed record SetScoreDto(int PlayerOneScore, int PlayerTwoScore);
 

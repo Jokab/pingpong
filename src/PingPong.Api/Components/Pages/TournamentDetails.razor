@@ -1,0 +1,294 @@
+@page "/tournaments/{TournamentId:guid}"
+@rendermode RenderMode.InteractiveServer
+@using PingPong.Api.Contracts
+@using PingPong.Domain.Entities
+
+<PageTitle>@(_summary?.Name ?? "Turnering")</PageTitle>
+
+<MudStack Spacing="3">
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-4 d-flex justify-center">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+        </MudPaper>
+    }
+    else if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error">@_error</MudAlert>
+    }
+    else if (_summary is null)
+    {
+        <MudAlert Severity="Severity.Error">Turneringen kunde inte hittas.</MudAlert>
+    }
+    else
+    {
+        <MudStack Spacing="2">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                <MudText Typo="Typo.h4" Class="font-weight-semibold">@_summary.Name</MudText>
+                <MudChip T="string" Color="@GetStatusColor(_summary.StatusValue)" Variant="Variant.Filled">
+                    @GetStatusLabel(_summary.StatusValue)
+                </MudChip>
+            </MudStack>
+            @if (!string.IsNullOrWhiteSpace(_summary.Description))
+            {
+                <MudText Typo="Typo.body1">@_summary.Description</MudText>
+            }
+            <MudText Typo="Typo.caption">@GetTimeframeText(_summary)</MudText>
+        </MudStack>
+
+        @if (_summary.StatusValue == TournamentStatus.Draft)
+        {
+            <MudPaper Class="pa-4">
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.subtitle1" Class="font-weight-semibold">Gå med i turneringen</MudText>
+                    <MudTextField @bind-Value="_joinName"
+                                  Label="Spelarnamn"
+                                  Placeholder="Ange ditt namn"
+                                  Immediate="true" />
+                    <MudStack Row="true" Spacing="1">
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   Disabled="_joining"
+                                   StartIcon="@Icons.Material.Filled.HowToReg"
+                                   OnClick="JoinTournamentAsync">
+                            @(_joining ? "Ansluter..." : "Gå med")
+                        </MudButton>
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                            Du kan inte gå med efter att turneringen har startat.
+                        </MudText>
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+        }
+        else if (_summary.StatusValue == TournamentStatus.Active)
+        {
+            <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+                Matcher kan spelas i valfri ordning. Rapportera resultaten som vanliga matcher och välj turneringen i rullistan.
+            </MudAlert>
+        }
+
+        <MudTabs Rounded="true" Color="Color.Primary">
+            <MudTabPanel Text="Ställning">
+                @if (_standings.Count == 0)
+                {
+                    <MudAlert Severity="Severity.Info">Inga matcher är registrerade ännu.</MudAlert>
+                }
+                else
+                {
+                    <MudTable Items="_standings" Dense="true">
+                        <HeaderContent>
+                            <MudTh>#</MudTh>
+                            <MudTh>Spelare</MudTh>
+                            <MudTh>Matcher</MudTh>
+                            <MudTh>Vinster</MudTh>
+                            <MudTh>Förluster</MudTh>
+                            <MudTh>Poäng</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>@(_standings.IndexOf(context) + 1)</MudTd>
+                            <MudTd>@context.PlayerName</MudTd>
+                            <MudTd>@context.MatchesPlayed</MudTd>
+                            <MudTd>@context.Wins</MudTd>
+                            <MudTd>@context.Losses</MudTd>
+                            <MudTd>@context.Points</MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+            </MudTabPanel>
+            <MudTabPanel Text="Matcher">
+                @if (_fixtures.Count == 0)
+                {
+                    <MudAlert Severity="Severity.Info">Inga matcher är planerade ännu.</MudAlert>
+                }
+                else
+                {
+                    <MudTable Items="_fixtures" Dense="true">
+                        <HeaderContent>
+                            <MudTh>Spelare</MudTh>
+                            <MudTh>Status</MudTh>
+                            <MudTh>Segrare</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>
+                                <MudText>@context.PlayerOneName</MudText>
+                                <MudText Typo="Typo.caption">vs @context.PlayerTwoName</MudText>
+                            </MudTd>
+                            <MudTd>
+                                <MudChip T="string" Color="@GetFixtureColor(context.StatusValue)" Variant="Variant.Outlined">
+                                    @GetFixtureStatusLabel(context.StatusValue)
+                                </MudChip>
+                            </MudTd>
+                            <MudTd>
+                                @if (context.WinnerPlayerId is null)
+                                {
+                                    <MudText Typo="Typo.caption" Class="mud-text-secondary">Ej spelad</MudText>
+                                }
+                                else
+                                {
+                                    <MudText>@context.GetWinnerName()</MudText>
+                                }
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+            </MudTabPanel>
+        </MudTabs>
+    }
+</MudStack>
+
+@code {
+    [Parameter]
+    public Guid TournamentId { get; set; }
+
+    [Inject]
+    private HttpClient Http { get; set; } = default!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = default!;
+
+    [Inject]
+    private UserIdentityService IdentityService { get; set; } = default!;
+
+    private TournamentSummaryResponse? _summary;
+    private readonly List<TournamentStandingResponse> _standings = [];
+    private readonly List<TournamentFixtureResponse> _fixtures = [];
+    private bool _isLoading = true;
+    private string? _error;
+    private string _joinName = string.Empty;
+    private bool _joining;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadAsync();
+        if (string.IsNullOrWhiteSpace(_joinName))
+        {
+            var identity = await IdentityService.GetIdentityNameAsync();
+            if (!string.IsNullOrWhiteSpace(identity))
+            {
+                _joinName = identity;
+            }
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _error = null;
+        try
+        {
+            var response = await Http.GetFromJsonAsync<TournamentDetailsResponse>($"/api/tournaments/{TournamentId}");
+            if (response is null)
+            {
+                _summary = null;
+                _standings.Clear();
+                _fixtures.Clear();
+                return;
+            }
+
+            _summary = response.Summary;
+            _standings.Clear();
+            _standings.AddRange(response.Standings
+                .OrderByDescending(s => s.Points)
+                .ThenByDescending(s => s.Wins)
+                .ThenByDescending(s => s.MatchesPlayed));
+            _fixtures.Clear();
+            _fixtures.AddRange(response.Fixtures.OrderBy(f => f.Sequence));
+        }
+        catch (HttpRequestException)
+        {
+            _error = "Kunde inte nå servern.";
+        }
+        catch (Exception ex)
+        {
+            _error = $"Kunde inte läsa turneringen: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task JoinTournamentAsync()
+    {
+        if (_summary is null || _summary.StatusValue != TournamentStatus.Draft)
+        {
+            return;
+        }
+
+        var trimmed = _joinName?.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            Snackbar.Add("Ange ett spelarnamn för att gå med.", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            _joining = true;
+            var payload = new TournamentParticipantDto(trimmed);
+            var result = await Http.PostAsJsonAsync($"/api/tournaments/{TournamentId}/join", payload);
+            if (result.IsSuccessStatusCode)
+            {
+                Snackbar.Add("Du är nu med i turneringen!", Severity.Success);
+                await LoadAsync();
+            }
+            else
+            {
+                var error = await result.Content.ReadFromJsonAsync<ApiErrorResponse>();
+                Snackbar.Add(error?.Error ?? "Misslyckades att gå med.", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Misslyckades att gå med: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _joining = false;
+        }
+    }
+
+    private static string GetStatusLabel(TournamentStatus status) => status switch
+    {
+        TournamentStatus.Draft => "Inte startad",
+        TournamentStatus.Active => "Pågår",
+        TournamentStatus.Completed => "Avslutad",
+        _ => status.ToString()
+    };
+
+    private static string GetFixtureStatusLabel(TournamentFixtureStatus status) => status switch
+    {
+        TournamentFixtureStatus.Pending => "Ej spelad",
+        TournamentFixtureStatus.Completed => "Spelad",
+        _ => status.ToString()
+    };
+
+    private static Color GetStatusColor(TournamentStatus status) => status switch
+    {
+        TournamentStatus.Draft => Color.Info,
+        TournamentStatus.Active => Color.Success,
+        TournamentStatus.Completed => Color.Secondary,
+        _ => Color.Default
+    };
+
+    private static Color GetFixtureColor(TournamentFixtureStatus status) => status switch
+    {
+        TournamentFixtureStatus.Pending => Color.Info,
+        TournamentFixtureStatus.Completed => Color.Success,
+        _ => Color.Default
+    };
+
+    private static string GetTimeframeText(TournamentSummaryResponse summary)
+    {
+        if (summary.StartedAt is null)
+        {
+            return $"Startas manuellt · {summary.DurationDays} dagar";
+        }
+
+        var endText = summary.EndsAt?.ToString("yyyy-MM-dd") ?? "utan slutdatum";
+        return $"Startade {summary.StartedAt:yyyy-MM-dd} · Slutar {endText}";
+    }
+
+    
+}
+

@@ -1,0 +1,251 @@
+@page "/admin"
+@rendermode RenderMode.InteractiveServer
+@using PingPong.Api.Contracts
+@using PingPong.Domain.Entities
+
+<PageTitle>Admin</PageTitle>
+
+<MudStack Spacing="3">
+    <MudText Typo="Typo.h4" Class="font-weight-semibold">Turneringsadmin</MudText>
+    <MudText Typo="Typo.body1">
+        Skapa nya turneringar och starta dem när deltagarna är redo. Sidan är öppen men länk delas endast internt.
+    </MudText>
+
+    <MudGrid Spacing="3">
+        <MudItem xs="12" md="4">
+            <MudPaper Class="pa-4">
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6">Skapa turnering</MudText>
+                    <MudTextField @bind-Value="_form.Name"
+                                  Label="Namn"
+                                  Placeholder="Skriv namn"
+                                  Immediate="true" />
+                    <MudTextField @bind-Value="_form.Description"
+                                  Label="Beskrivning"
+                                  Placeholder="Valfri kort text"
+                                  Lines="3"
+                                  TextUpdateSuppression="false"
+                                  Immediate="true" />
+                    <MudNumericField @bind-Value="_form.DurationDays"
+                                     Label="Varaktighet (dagar)"
+                                     Min="7"
+                                     Max="60"
+                                     Immediate="true" />
+                    @if (!string.IsNullOrWhiteSpace(_formError))
+                    {
+                        <MudAlert Severity="Severity.Error">@_formError</MudAlert>
+                    }
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Disabled="_creating"
+                               StartIcon="@Icons.Material.Filled.AddCircle"
+                               OnClick="CreateTournamentAsync">
+                        @(_creating ? "Skapar..." : "Skapa turnering")
+                    </MudButton>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" md="8">
+            <MudPaper Class="pa-4">
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6">Aktuella turneringar</MudText>
+                    @if (_isLoading)
+                    {
+                        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                    }
+                    else if (!string.IsNullOrWhiteSpace(_error))
+                    {
+                        <MudAlert Severity="Severity.Error">@_error</MudAlert>
+                    }
+                    else if (_tournaments.Count == 0)
+                    {
+                        <MudAlert Severity="Severity.Info">Inga turneringar är registrerade.</MudAlert>
+                    }
+                    else
+                    {
+                        <MudTable Items="_tournaments" Dense="true">
+                            <HeaderContent>
+                                <MudTh>Namn</MudTh>
+                                <MudTh>Status</MudTh>
+                                <MudTh>Deltagare</MudTh>
+                                <MudTh>Åtgärder</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd>@context.Name</MudTd>
+                                <MudTd>@GetStatusLabel(context.StatusValue)</MudTd>
+                                <MudTd>@context.ParticipantCount</MudTd>
+                                <MudTd>
+                                    <MudStack Row="true" Spacing="1">
+                                        <MudButton Variant="Variant.Text"
+                                                   Size="Size.Small"
+                                                   Href="@($"/tournaments/{context.Id}")"
+                                                   EndIcon="@Icons.Material.Filled.OpenInNew">
+                                            Öppna
+                                        </MudButton>
+                                        @if (context.StatusValue == TournamentStatus.Draft)
+                                        {
+                                            <MudButton Variant="Variant.Outlined"
+                                                       Size="Size.Small"
+                                                       Color="Color.Success"
+                                                       Disabled="_startingId == context.Id"
+                                                       OnClick="@(() => StartTournamentAsync(context.Id))">
+                                                @_startingId == context.Id ? "Startar..." : "Starta"
+                                            </MudButton>
+                                        }
+                                    </MudStack>
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    }
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudStack>
+
+@code {
+    [Inject]
+    private HttpClient Http { get; set; } = default!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = default!;
+
+    private readonly List<TournamentSummaryResponse> _tournaments = [];
+    private bool _isLoading = true;
+    private string? _error;
+    private bool _creating;
+    private Guid? _startingId;
+    private string? _formError;
+
+    private readonly TournamentCreateForm _form = new()
+    {
+        DurationDays = 21
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _error = null;
+        try
+        {
+            var response = await Http.GetFromJsonAsync<TournamentListResponse>("/api/tournaments");
+            _tournaments.Clear();
+            if (response?.Items is not null)
+            {
+                _tournaments.AddRange(response.Items
+                    .OrderBy(t => StatusSortOrder(t.StatusValue))
+                    .ThenByDescending(t => t.StartedAt ?? t.CreatedAt));
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Kunde inte ladda turneringar: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task CreateTournamentAsync()
+    {
+        _formError = null;
+        if (string.IsNullOrWhiteSpace(_form.Name))
+        {
+            _formError = "Ange ett namn.";
+            return;
+        }
+
+        if (_form.DurationDays < 7)
+        {
+            _formError = "Varaktigheten måste vara minst 7 dagar.";
+            return;
+        }
+
+        try
+        {
+            _creating = true;
+            var payload = new TournamentCreateDto(_form.Name.Trim(), _form.Description, _form.DurationDays);
+            var response = await Http.PostAsJsonAsync("/api/admin/tournaments", payload);
+            if (response.IsSuccessStatusCode)
+            {
+                Snackbar.Add("Turneringen skapades.", Severity.Success);
+                _form.Name = string.Empty;
+                _form.Description = string.Empty;
+                await LoadAsync();
+            }
+            else
+            {
+                var error = await response.Content.ReadFromJsonAsync<ApiErrorResponse>();
+                _formError = error?.Error ?? "Okänt fel.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _formError = $"Misslyckades att skapa turneringen: {ex.Message}";
+        }
+        finally
+        {
+            _creating = false;
+        }
+    }
+
+    private async Task StartTournamentAsync(Guid tournamentId)
+    {
+        try
+        {
+            _startingId = tournamentId;
+            var response = await Http.PostAsync($"/api/admin/tournaments/{tournamentId}/start", null);
+            if (response.IsSuccessStatusCode)
+            {
+                Snackbar.Add("Turneringen startades.", Severity.Success);
+                await LoadAsync();
+            }
+            else
+            {
+                var error = await response.Content.ReadFromJsonAsync<ApiErrorResponse>();
+                Snackbar.Add(error?.Error ?? "Kunde inte starta turneringen.", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Kunde inte starta turneringen: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _startingId = null;
+        }
+    }
+
+    private static string GetStatusLabel(TournamentStatus status) => status switch
+    {
+        TournamentStatus.Draft => "Inte startad",
+        TournamentStatus.Active => "Pågår",
+        TournamentStatus.Completed => "Avslutad",
+        _ => status.ToString()
+    };
+
+    private static int StatusSortOrder(TournamentStatus status) => status switch
+    {
+        TournamentStatus.Draft => 0,
+        TournamentStatus.Active => 1,
+        TournamentStatus.Completed => 2,
+        _ => 3
+    };
+
+    private sealed class TournamentCreateForm
+    {
+        public string Name { get; set; } = string.Empty;
+
+        public string? Description { get; set; }
+
+        public int DurationDays { get; set; }
+    }
+
+}
+

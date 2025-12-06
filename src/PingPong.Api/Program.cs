@@ -52,7 +52,7 @@ if (args.Contains("--seed-data", StringComparer.OrdinalIgnoreCase))
     return;
 }
 
-if (!app.Environment.IsDevelopment())
+if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     app.UseHsts();
@@ -123,7 +123,8 @@ app.MapPost("/matches", async (MatchSubmissionDto dto, IMatchSubmissionService m
             sets,
             outcomeOnlySets,
             playerOneWon,
-            dto.SubmittedBy);
+            dto.SubmittedBy,
+            dto.TournamentFixtureId);
 
         try
         {
@@ -269,6 +270,151 @@ app.MapGet("/api/standings", async (IStandingsService standingsService, Cancella
     })
     .WithName("GetStandings");
 
+app.MapPost("/api/admin/tournaments", async (TournamentCreateDto dto, ITournamentCommandService commandService, CancellationToken ct) =>
+    {
+        if (dto is null || string.IsNullOrWhiteSpace(dto.Name))
+        {
+            return Results.BadRequest(new { error = "name is required" });
+        }
+
+        try
+        {
+            var request = new CreateTournamentRequest(dto.Name, dto.Description, dto.DurationDays);
+            var summary = await commandService.CreateTournamentAsync(request, ct);
+            return Results.Created($"/api/tournaments/{summary.Id}", ToResponse(summary));
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+        {
+            return Results.BadRequest(new { error = ex.Message });
+        }
+    })
+    .WithName("CreateTournament")
+    .DisableAntiforgery();
+
+app.MapPost("/api/admin/tournaments/{id:guid}/start", async (Guid id, ITournamentCommandService commandService, CancellationToken ct) =>
+    {
+        try
+        {
+            var summary = await commandService.StartTournamentAsync(id, ct);
+            return Results.Ok(ToResponse(summary));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.BadRequest(new { error = ex.Message });
+        }
+    })
+    .WithName("StartTournament")
+    .DisableAntiforgery();
+
+app.MapGet("/api/tournaments", async (ITournamentQueryService queryService, CancellationToken ct) =>
+    {
+        var items = await queryService.GetTournamentsAsync(ct);
+        return Results.Ok(new TournamentListResponse
+        {
+            Items = items.Select(ToResponse).ToList()
+        });
+    })
+    .WithName("ListTournaments");
+
+app.MapGet("/api/tournaments/{id:guid}", async (Guid id, ITournamentQueryService queryService, CancellationToken ct) =>
+    {
+        var details = await queryService.GetTournamentAsync(id, ct);
+        if (details is null)
+        {
+            return Results.NotFound();
+        }
+
+        return Results.Ok(new TournamentDetailsResponse
+        {
+            Summary = ToResponse(details.Summary),
+            Standings = details.Standings.Select(ToResponse).ToList(),
+            Fixtures = details.Fixtures.Select(ToResponse).ToList()
+        });
+    })
+    .WithName("GetTournament");
+
+app.MapGet("/api/tournaments/{id:guid}/fixtures", async (Guid id, ITournamentQueryService queryService, CancellationToken ct) =>
+    {
+        var fixtures = await queryService.GetFixturesAsync(id, ct);
+        return Results.Ok(new
+        {
+            items = fixtures.Select(ToResponse)
+        });
+    })
+    .WithName("GetTournamentFixtures");
+
+app.MapPost("/api/tournaments/{id:guid}/join", async (Guid id, TournamentParticipantDto dto, ITournamentCommandService commandService, CancellationToken ct) =>
+    {
+        if (dto is null || string.IsNullOrWhiteSpace(dto.PlayerName))
+        {
+            return Results.BadRequest(new { error = "playerName is required" });
+        }
+
+        try
+        {
+            var standing = await commandService.JoinTournamentAsync(id, dto.PlayerName, ct);
+            return Results.Ok(ToResponse(standing));
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+        {
+            return Results.BadRequest(new { error = ex.Message });
+        }
+    })
+    .WithName("JoinTournament")
+    .DisableAntiforgery();
+
+app.MapPost("/api/tournaments/{id:guid}/leave", async (Guid id, TournamentParticipantDto dto, ITournamentCommandService commandService, CancellationToken ct) =>
+    {
+        if (dto is null || string.IsNullOrWhiteSpace(dto.PlayerName))
+        {
+            return Results.BadRequest(new { error = "playerName is required" });
+        }
+
+        try
+        {
+            await commandService.LeaveTournamentAsync(id, dto.PlayerName, ct);
+            return Results.NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.BadRequest(new { error = ex.Message });
+        }
+    })
+    .WithName("LeaveTournament")
+    .DisableAntiforgery();
+
+app.MapGet("/api/tournaments/open-fixtures", async (string? playerOne, string? playerTwo, ITournamentQueryService queryService, CancellationToken ct) =>
+    {
+        var items = await queryService.GetOpenFixturesAsync(playerOne ?? string.Empty, playerTwo ?? string.Empty, ct);
+        return Results.Ok(new
+        {
+            items = items.Select(option => new
+            {
+                fixtureId = option.FixtureId,
+                tournamentId = option.TournamentId,
+                tournamentName = option.TournamentName,
+                playerOneId = option.PlayerOneId,
+                playerTwoId = option.PlayerTwoId,
+                opponentId = option.OpponentId,
+                opponentName = option.OpponentName
+            })
+        });
+    })
+    .WithName("GetOpenTournamentFixtures");
+
 app.Run();
 
-public partial class Program;
+public partial class Program
+{
+    private static TournamentSummaryResponse ToResponse(TournamentSummary summary) =>
+        new(summary.Id, summary.Name, summary.Description, summary.Status, summary.DurationDays,
+            summary.ParticipantCount, summary.CreatedAt, summary.StartedAt, summary.EndsAt);
+
+    private static TournamentStandingResponse ToResponse(TournamentStandingRow row) =>
+        new(row.PlayerId, row.PlayerName, row.MatchesPlayed, row.Wins, row.Losses, row.Points, row.CurrentRating);
+
+    private static TournamentFixtureResponse ToResponse(TournamentFixtureView fixture) =>
+        new(fixture.FixtureId, fixture.TournamentId, fixture.PlayerOneId, fixture.PlayerOneName, fixture.PlayerTwoId,
+            fixture.PlayerTwoName, fixture.Status, fixture.WinnerPlayerId, fixture.MatchEventId, fixture.RoundNumber,
+            fixture.Sequence);
+}

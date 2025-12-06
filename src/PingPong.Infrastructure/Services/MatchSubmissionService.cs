@@ -12,12 +12,18 @@ public sealed class MatchSubmissionService : IMatchSubmissionService
     private readonly PingPongDbContext _context;
     private readonly IPlayerDirectory _playerDirectory;
     private readonly IRatingService _ratingService;
+    private readonly ITournamentCommandService _tournamentCommandService;
 
-    public MatchSubmissionService(PingPongDbContext context, IPlayerDirectory playerDirectory, IRatingService ratingService)
+    public MatchSubmissionService(
+        PingPongDbContext context,
+        IPlayerDirectory playerDirectory,
+        IRatingService ratingService,
+        ITournamentCommandService tournamentCommandService)
     {
         _context = context;
         _playerDirectory = playerDirectory;
         _ratingService = ratingService;
+        _tournamentCommandService = tournamentCommandService;
     }
 
     public async Task<MatchSubmissionResult> SubmitMatchAsync(MatchSubmissionRequest request, CancellationToken cancellationToken = default)
@@ -44,6 +50,9 @@ public sealed class MatchSubmissionService : IMatchSubmissionService
         var playerTwo = await _playerDirectory.EnsurePlayerAsync(request.PlayerTwoName, cancellationToken);
 
         var submittedAt = DateTimeOffset.UtcNow;
+
+        MatchEvent matchEvent;
+        Guid winnerPlayerId;
 
         if (hasScoredSets)
         {
@@ -76,7 +85,7 @@ public sealed class MatchSubmissionService : IMatchSubmissionService
             }
 
             var matchEventId = Guid.NewGuid();
-            var matchEvent = new ScoredMatchEvent
+            matchEvent = new ScoredMatchEvent
             {
                 Id = matchEventId,
                 EventType = MatchEventType.Recorded,
@@ -92,14 +101,9 @@ public sealed class MatchSubmissionService : IMatchSubmissionService
 
             // Ensure EF doesn't enforce FK to a Match row: keep default
             matchEvent.MatchId = matchEvent.MatchId;
-            _context.MatchEvents.Add(matchEvent);
-            await _context.SaveChangesAsync(cancellationToken);
-
-            await _ratingService.RebuildAllRatingsAsync(cancellationToken);
-            return new MatchSubmissionResult(Guid.Empty, matchEvent.Id);
+            winnerPlayerId = playerOneSetsWon > playerTwoSetsWon ? playerOne.Id : playerTwo.Id;
         }
-        
-        if (hasOutcomeOnlySets)
+        else if (hasOutcomeOnlySets)
         {
             var ordered = outcomeOnlySets.OrderBy(s => s.SetNumber).ToList();
             if (ordered.Any(s => s.SetNumber <= 0))
@@ -126,7 +130,7 @@ public sealed class MatchSubmissionService : IMatchSubmissionService
             }
 
             var matchEventId = Guid.NewGuid();
-            var matchEvent = new OutcomeOnlyMatchEvent
+            matchEvent = new OutcomeOnlyMatchEvent
             {
                 Id = matchEventId,
                 EventType = MatchEventType.Recorded,
@@ -140,16 +144,11 @@ public sealed class MatchSubmissionService : IMatchSubmissionService
                 PlayerOneWon = derivedWinner,
                 Sets = ordered.Select(set => MatchEventSetEntity.CreateOutcomeOnly(matchEventId, set.SetNumber, set.PlayerOneWon)).ToList()
             };
-
-            _context.MatchEvents.Add(matchEvent);
-            await _context.SaveChangesAsync(cancellationToken);
-
-            await _ratingService.RebuildAllRatingsAsync(cancellationToken);
-            return new MatchSubmissionResult(Guid.Empty, matchEvent.Id);
+            winnerPlayerId = derivedWinner ? playerOne.Id : playerTwo.Id;
         }
         else
         {
-            var matchEvent = new OutcomeOnlyMatchEvent
+            matchEvent = new OutcomeOnlyMatchEvent
             {
                 Id = Guid.NewGuid(),
                 EventType = MatchEventType.Recorded,
@@ -163,11 +162,18 @@ public sealed class MatchSubmissionService : IMatchSubmissionService
                 PlayerOneWon = request.PlayerOneWon!.Value
             };
 
-            _context.MatchEvents.Add(matchEvent);
-            await _context.SaveChangesAsync(cancellationToken);
-
-            await _ratingService.RebuildAllRatingsAsync(cancellationToken);
-            return new MatchSubmissionResult(Guid.Empty, matchEvent.Id);
+            winnerPlayerId = request.PlayerOneWon!.Value ? playerOne.Id : playerTwo.Id;
         }
+
+        _context.MatchEvents.Add(matchEvent);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        if (request.TournamentFixtureId is Guid fixtureId)
+        {
+            await _tournamentCommandService.RecordFixtureResultAsync(fixtureId, winnerPlayerId, matchEvent.Id, cancellationToken);
+        }
+
+        await _ratingService.RebuildAllRatingsAsync(cancellationToken);
+        return new MatchSubmissionResult(Guid.Empty, matchEvent.Id);
     }
 }

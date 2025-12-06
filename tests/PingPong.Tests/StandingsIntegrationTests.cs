@@ -31,7 +31,8 @@ public sealed class StandingsIntegrationTests : IClassFixture<IntegrationTestWeb
                 new(11, 8),
                 new(11, 9)
             },
-            "standings-integration");
+            "standings-integration",
+            TournamentFixtureId: null);
 
         // Act: submit a match
         var response = await client.PostAsJsonAsync("/matches", request);

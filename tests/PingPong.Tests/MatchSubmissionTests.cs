@@ -34,7 +34,8 @@ public sealed class MatchSubmissionTests : IClassFixture<IntegrationTestWebAppli
                 new(7, 11),
                 new(11, 9)
             },
-            "integration-test");
+            "integration-test",
+            TournamentFixtureId: null);
 
         // Act
         var response = await client.PostAsJsonAsync("/matches", request);
@@ -73,7 +74,8 @@ public sealed class MatchSubmissionTests : IClassFixture<IntegrationTestWebAppli
             today,
             PlayerOneWon: true,
             Sets: null,
-            "outcome-test");
+            "outcome-test",
+            TournamentFixtureId: null);
 
         // Act
         var response = await client.PostAsJsonAsync("/matches", request);
@@ -127,7 +129,8 @@ public sealed class MatchSubmissionTests : IClassFixture<IntegrationTestWebAppli
                 new(2, false),
                 new(3, true)
             },
-            SubmittedBy: "outcome-sets");
+            SubmittedBy: "outcome-sets",
+            TournamentFixtureId: null);
 
         // Act
         var response = await client.PostAsJsonAsync("/matches", request);

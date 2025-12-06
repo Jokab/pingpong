@@ -1,3 +1,5 @@
+@using System.Text.Json.Serialization
+
 <MudPaper Elevation="1" Class="pa-4 form-card">
     <MudStack Spacing="2">
         <MudText Typo="Typo.h5" Class="font-weight-semibold">Registrera match</MudText>
@@ -35,7 +37,7 @@
                 <MudStack Row="true" Spacing="1">
                     @foreach (var s in _suggestions)
                     {
-                        <MudChip T="string" OnClick="@(() => { _model.PlayerTwo = s.displayName; StateHasChanged(); })">
+                        <MudChip T="string" OnClick="@(() => SelectQuickOpponentAsync(s.displayName))">
                             @s.displayName
                         </MudChip>
                     }
@@ -63,6 +65,39 @@
                 }
             </AfterItemsTemplate>
         </MudAutocomplete>
+
+        @* Hidden until we want to expose tournament integration in the UI
+        @if (!string.IsNullOrWhiteSpace(_model.PlayerOne) && !string.IsNullOrWhiteSpace(_model.PlayerTwo))
+        {
+            <MudStack Spacing="1">
+                <MudText Typo="Typo.subtitle2">Turneringsmatch (valfritt)</MudText>
+                @if (_isLoadingFixtures)
+                {
+                    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+                }
+                else if (_fixtureOptions.Count > 0)
+                {
+                    <MudSelect T="Guid?" Label="Koppla till turnering" @bind-Value="_selectedFixtureId" Dense="true" Clearable="true">
+                        @foreach (var option in _fixtureOptions)
+                        {
+                            <MudSelectItem Value="@option.FixtureId">
+                                @($"{option.TournamentName} · mot {option.OpponentName}")
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                        Välj turnering om matchen ingår i ett schema. Lämna tomt annars.
+                    </MudText>
+                }
+                else
+                {
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                        Inga öppna turneringsmatcher för spelarna just nu.
+                    </MudText>
+                }
+            </MudStack>
+        }
+        *@
 
         <MudDatePicker Label="Matchdatum"
                        @bind-Date="_model.MatchDate"
@@ -181,6 +216,9 @@
     private string? _lastSuggestionsSource;
     private SubmissionMode _submissionMode = SubmissionMode.OutcomeOnly;
     private string _outcomeSetsInput = string.Empty;
+    private Guid? _selectedFixtureId;
+    // private bool _isLoadingFixtures; // kept for future tournament UI; currently not in use
+    private List<TournamentFixtureOption> _fixtureOptions = new();
     private static readonly CultureInfo SwedishCulture = CultureInfo.GetCultureInfo("sv-SE");
 
     protected override async Task OnInitializedAsync()
@@ -327,6 +365,51 @@
         await InvokeAsync(StateHasChanged);
     }
 
+    private async Task RefreshFixtureOptionsAsync()
+    {
+        var playerOne = _model.PlayerOne?.Trim();
+        var playerTwo = _model.PlayerTwo?.Trim();
+
+        if (string.IsNullOrWhiteSpace(playerOne) || string.IsNullOrWhiteSpace(playerTwo) ||
+            string.Equals(playerOne, playerTwo, StringComparison.OrdinalIgnoreCase))
+        {
+            if (_fixtureOptions.Count > 0 || _selectedFixtureId is not null)
+            {
+                _fixtureOptions.Clear();
+                _selectedFixtureId = null;
+                await InvokeAsync(StateHasChanged);
+            }
+            return;
+        }
+
+        try
+        {
+            var url = $"/api/tournaments/open-fixtures?playerOne={Uri.EscapeDataString(playerOne)}&playerTwo={Uri.EscapeDataString(playerTwo)}";
+            var response = await Http.GetFromJsonAsync<FixtureOptionsResponse>(url);
+            _fixtureOptions = response?.Items ?? new List<TournamentFixtureOption>();
+            if (!_fixtureOptions.Any(o => o.FixtureId == _selectedFixtureId))
+            {
+                _selectedFixtureId = null;
+            }
+        }
+        catch
+        {
+            _fixtureOptions.Clear();
+            _selectedFixtureId = null;
+        }
+        finally
+        {
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task SelectQuickOpponentAsync(string opponentName)
+    {
+        _model.PlayerTwo = opponentName;
+        await RefreshFixtureOptionsAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
     private async Task SubmitAsync()
     {
         if (_isSubmitting) return;
@@ -366,8 +449,9 @@
                 p2,
                 _model.MatchDate.HasValue ? DateOnly.FromDateTime(_model.MatchDate.Value) : DateOnly.FromDateTime(DateTime.UtcNow),
                 playerOneWon,
-                    Sets: outcomeSets,
-                SubmittedBy: submittedBy);
+                Sets: outcomeSets,
+                SubmittedBy: submittedBy,
+                TournamentFixtureId: _selectedFixtureId);
         }
         else
         {
@@ -386,7 +470,8 @@
                 p2,
                 _model.MatchDate.HasValue ? DateOnly.FromDateTime(_model.MatchDate.Value) : DateOnly.FromDateTime(DateTime.UtcNow),
                 sets,
-                submittedBy);
+                submittedBy,
+                _selectedFixtureId);
         }
 
         try
@@ -408,6 +493,8 @@
             // Reset form but keep players for consecutive matches
             _model.Sets.Clear();
             _outcomeSetsInput = string.Empty;
+            _fixtureOptions.Clear();
+            _selectedFixtureId = null;
             if (_submissionMode == SubmissionMode.Scored)
             {
                 for (var i = 0; i < 3; i++) AddSet();
@@ -475,6 +562,7 @@
 
         Snackbar.Add($"La till spelare '{created.displayName}'", Severity.Success);
         StateHasChanged();
+        await RefreshFixtureOptionsAsync();
     }
 
     private async Task OnPlayerSelected(string? selection, bool isPlayerOne)
@@ -492,6 +580,7 @@
             {
                 _model.PlayerTwo = null;
             }
+            await RefreshFixtureOptionsAsync();
             return;
         }
         
@@ -513,6 +602,8 @@
         {
             _model.PlayerTwo = selection;
         }
+
+        await RefreshFixtureOptionsAsync();
     }
 
     private sealed record PlayerSuggestion(Guid id, string displayName, double score, bool isExact);
@@ -520,6 +611,21 @@
     private sealed record PlayerCreated(Guid id, string displayName);
     private sealed record Suggestion(Guid id, string displayName, int count);
     private sealed record SuggestionsResponse(List<Suggestion> items);
+    private sealed record FixtureOptionsResponse([property: JsonPropertyName("items")] List<TournamentFixtureOption> Items);
+    private sealed class TournamentFixtureOption
+    {
+        [JsonPropertyName("fixtureId")]
+        public Guid FixtureId { get; set; }
+
+        [JsonPropertyName("tournamentId")]
+        public Guid TournamentId { get; set; }
+
+        [JsonPropertyName("tournamentName")]
+        public string TournamentName { get; set; } = string.Empty;
+
+        [JsonPropertyName("opponentName")]
+        public string OpponentName { get; set; } = string.Empty;
+    }
 
     private readonly record struct OutcomePreview(int PlayerOneSets, int PlayerTwoSets, string WinnerName);
 

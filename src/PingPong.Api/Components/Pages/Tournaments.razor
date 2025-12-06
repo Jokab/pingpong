@@ -1,0 +1,137 @@
+@page "/tournaments"
+@rendermode RenderMode.InteractiveServer
+@using PingPong.Api.Contracts
+@using PingPong.Domain.Entities
+
+<PageTitle>Turneringar</PageTitle>
+
+<MudStack Spacing="3">
+    <MudText Typo="Typo.h4" Class="font-weight-semibold">Turneringar</MudText>
+    <MudText Typo="Typo.body1">
+        Håll koll på aktuella turneringar och hoppa in i den som passar bäst. Matcher kan spelas i valfri ordning inom angivet tidsfönster.
+    </MudText>
+
+    @if (_isLoading)
+    {
+        <MudPaper Class="pa-4 d-flex justify-center">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+        </MudPaper>
+    }
+    else if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <MudAlert Severity="Severity.Error">@_error</MudAlert>
+    }
+    else if (_tournaments.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info">Inga turneringar är skapade ännu.</MudAlert>
+    }
+    else
+    {
+        <MudGrid Spacing="3">
+            @foreach (var t in _tournaments)
+            {
+                <MudItem xs="12" md="6">
+                    <MudCard>
+                        <MudCardContent>
+                            <MudStack Spacing="1">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                    <MudText Typo="Typo.h6">@t.Name</MudText>
+                                    <MudChip T="string" Color="@GetStatusColor(t.StatusValue)" Variant="Variant.Outlined">
+                                        @GetStatusLabel(t.StatusValue)
+                                    </MudChip>
+                                </MudStack>
+                                @if (!string.IsNullOrWhiteSpace(t.Description))
+                                {
+                                    <MudText Typo="Typo.body2" Class="mud-text-secondary">@t.Description</MudText>
+                                }
+                                <MudText Typo="Typo.caption">Deltagare: @t.ParticipantCount</MudText>
+                                <MudText Typo="Typo.caption">@GetTimeframeText(t)</MudText>
+                            </MudStack>
+                        </MudCardContent>
+                        <MudCardActions>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="@($"/tournaments/{t.Id}")" EndIcon="@Icons.Material.Filled.ArrowForward">
+                                Visa detaljer
+                            </MudButton>
+                        </MudCardActions>
+                    </MudCard>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+</MudStack>
+
+@code {
+    [Inject]
+    private HttpClient Http { get; set; } = default!;
+
+    private readonly List<TournamentSummaryResponse> _tournaments = new();
+    private bool _isLoading = true;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        _error = null;
+        try
+        {
+            var response = await Http.GetFromJsonAsync<TournamentListResponse>("/api/tournaments");
+            _tournaments.Clear();
+            if (response?.Items is not null)
+            {
+                _tournaments.AddRange(response.Items
+                    .OrderBy(t => StatusSortOrder(t.StatusValue))
+                    .ThenByDescending(t => t.StartedAt ?? t.CreatedAt));
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Kunde inte ladda turneringar: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private static string GetStatusLabel(TournamentStatus status) => status switch
+    {
+        TournamentStatus.Draft => "Inte startad",
+        TournamentStatus.Active => "Pågår",
+        TournamentStatus.Completed => "Avslutad",
+        _ => status.ToString()
+    };
+
+    private static Color GetStatusColor(TournamentStatus status) => status switch
+    {
+        TournamentStatus.Draft => Color.Info,
+        TournamentStatus.Active => Color.Success,
+        TournamentStatus.Completed => Color.Secondary,
+        _ => Color.Default
+    };
+
+    private static string GetTimeframeText(TournamentSummaryResponse summary)
+    {
+        if (summary.StartedAt is null)
+        {
+            return $"Startas manuellt · {summary.DurationDays} dagar";
+        }
+
+        var endText = summary.EndsAt?.ToString("yyyy-MM-dd") ?? "okänt slutdatum";
+        return $"Startade {summary.StartedAt:yyyy-MM-dd} · Slutar {endText}";
+    }
+
+    private static int StatusSortOrder(TournamentStatus status) => status switch
+    {
+        TournamentStatus.Active => 0,
+        TournamentStatus.Draft => 1,
+        TournamentStatus.Completed => 2,
+        _ => 3
+    };
+
+}
+

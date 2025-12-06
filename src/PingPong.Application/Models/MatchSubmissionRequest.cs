@@ -7,7 +7,8 @@ public sealed record MatchSubmissionRequest(
     IReadOnlyList<SetScore> Sets,
     IReadOnlyList<SetWinner> OutcomeOnlySets,
     bool? PlayerOneWon,
-    string? SubmittedBy);
+    string? SubmittedBy,
+    Guid? TournamentFixtureId);
 
 public sealed record SetScore(int SetNumber, int PlayerOneScore, int PlayerTwoScore);
 

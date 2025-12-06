@@ -72,6 +72,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IHistoryService, HistoryService>();
         services.AddScoped<IHeadToHeadService, HeadToHeadService>();
         services.AddScoped<IRatingService, EloRatingService>();
+        services.AddScoped<ITournamentCommandService, TournamentCommandService>();
+        services.AddScoped<ITournamentQueryService, TournamentQueryService>();
         services.AddScoped<DevDataSeeder>();
 
         return services;
