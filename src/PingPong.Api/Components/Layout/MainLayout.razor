@@ -60,23 +60,34 @@
     {
         PaletteLight = new PaletteLight
         {
-            Primary = "#5E35B1",        // Deep purple
-            Secondary = "#78909C",       // Blue-gray (muted, not pink!)
-            Tertiary = "#26A69A",        // Teal accent
-            Info = "#2196F3",
-            Success = "#4CAF50",
-            Warning = "#FF9800",
-            Error = "#E53935",
-            AppbarBackground = "#5E35B1",
-            DrawerBackground = "#5E35B1",
+            Primary = "#33BBFF",           // Wint blue-03 (main brand color)
+            Secondary = "#807D75",          // Wint gray-02 (muted text)
+            Tertiary = "#26BF73",           // Wint green-03 (accent)
+            Info = "#0C9EF2",               // Wint blue-02
+            Success = "#26BF73",            // Wint green-03
+            Warning = "#FFB219",            // Wint yellow-03
+            Error = "#E62253",              // Wint red-04
+            AppbarBackground = "#1F4266",   // Wint blue-01 (darker blue for header)
+            DrawerBackground = "#1F4266",   // Wint blue-01
             DrawerText = "#FFFFFF",
             DrawerIcon = "#FFFFFF",
+            Background = "#FFFFFF",
+            Surface = "#FFFFFF",
+            TextPrimary = "#272727",        // Wint gray-01
+            TextSecondary = "#807D75",      // Wint gray-02
         },
         PaletteDark = new PaletteDark
         {
-            Primary = "#7E57C2",
-            Secondary = "#90A4AE",
-            Tertiary = "#4DB6AC",
+            Primary = "#66CCFF",            // Wint blue-04
+            Secondary = "#A7A59D",          // Wint gray-03
+            Tertiary = "#41D980",           // Wint green-04
+        },
+        Typography = new Typography
+        {
+            Default = new DefaultTypography
+            {
+                FontFamily = ["Roboto", "Helvetica", "Arial", "sans-serif"],
+            }
         }
     };
 
