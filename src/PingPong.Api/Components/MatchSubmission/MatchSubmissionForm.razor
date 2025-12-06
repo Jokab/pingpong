@@ -152,10 +152,10 @@
                                     <MudText Typo="Typo.subtitle2">Set @set.Number</MudText>
                                 </MudItem>
                                 <MudItem xs="12" sm="4">
-                                    <MudNumericField @bind-Value="set.PlayerOneScore" Label="Spelare ett" Min="0" />
+                                    <MudNumericField T="int?" @bind-Value="set.PlayerOneScore" Label="Spelare ett" Min="0" Required="true" RequiredError="Ange poäng" />
                                 </MudItem>
                                 <MudItem xs="12" sm="4">
-                                    <MudNumericField @bind-Value="set.PlayerTwoScore" Label="Spelare två" Min="0" />
+                                    <MudNumericField T="int?" @bind-Value="set.PlayerTwoScore" Label="Spelare två" Min="0" Required="true" RequiredError="Ange poäng" />
                                 </MudItem>
                             </MudGrid>
                             <MudDivider Class="my-1" />
@@ -461,8 +461,14 @@
                 return;
             }
 
+            if (_model.Sets.Any(s => !s.PlayerOneScore.HasValue || !s.PlayerTwoScore.HasValue))
+            {
+                _error = "Fyll i poängen för alla set.";
+                return;
+            }
+
             var sets = _model.Sets
-                .Select(s => new SetScoreDto(s.PlayerOneScore, s.PlayerTwoScore))
+                .Select(s => new SetScoreDto(s.PlayerOneScore!.Value, s.PlayerTwoScore!.Value))
                 .ToList();
 
             dto = (MatchSubmissionDto)new ScoredMatchSubmissionDto(
@@ -538,9 +544,9 @@
 
         public int Number { get; }
 
-        public int PlayerOneScore { get; set; }
+        public int? PlayerOneScore { get; set; }
 
-        public int PlayerTwoScore { get; set; }
+        public int? PlayerTwoScore { get; set; }
     }
     private async Task AddNewPlayerAsync(bool isPlayerOne)
     {
