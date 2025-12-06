@@ -1,0 +1,81 @@
+/* Responsive visibility */
+.standings-desktop {
+    display: block;
+}
+
+.standings-mobile {
+    display: none;
+}
+
+@media (max-width: 599.95px) {
+    .standings-desktop {
+        display: none;
+    }
+
+    .standings-mobile {
+        display: block;
+    }
+}
+
+/* Mobile layout */
+.standings-mobile-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--mud-palette-lines-default);
+}
+
+.standings-mobile-row:last-child {
+    border-bottom: none;
+}
+
+.standings-mobile-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.standings-mobile-rank {
+    min-width: 28px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--mud-palette-text-primary);
+}
+
+.standings-mobile-avatar {
+    flex-shrink: 0;
+}
+
+.standings-mobile-name {
+    flex: 1;
+    font-weight: 500;
+    font-size: 0.95rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.standings-mobile-rating {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--mud-palette-text-primary);
+    min-width: 44px;
+    text-align: right;
+}
+
+.standings-mobile-stats {
+    display: flex;
+    gap: 12px;
+    padding-left: 38px; /* align under name (rank width + gap) */
+    font-size: 0.8rem;
+    color: var(--mud-palette-text-secondary);
+}
+
+.standings-mobile-wins {
+    color: var(--mud-palette-success);
+}
+
+.standings-mobile-losses {
+    color: var(--mud-palette-text-secondary);
+}

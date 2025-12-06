@@ -23,40 +23,66 @@
             </MudAlert>
         }
 
-        <MudTable Items="_rows" Hover="true" Dense="true" Class="standings-table" Loading="_isLoading">
-            <HeaderContent>
-                <MudTh>#</MudTh>
-                <MudTh>Spelare</MudTh>
-                <MudTh class="text-center">Matcher</MudTh>
-                <MudTh class="text-center">Vinster</MudTh>
-                <MudTh class="text-center">Förluster</MudTh>
-                <MudTh class="text-center">Vinst %</MudTh>
-                <MudTh class="text-center">Ranking</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd DataLabel="#">@context.Position</MudTd>
-                <MudTd DataLabel="Spelare">
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                        <MudAvatar Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled">
-                            @context.Initials
+        <div class="standings-desktop">
+            <MudTable Items="_rows" Hover="true" Dense="true" Class="standings-table" Loading="_isLoading">
+                <HeaderContent>
+                    <MudTh>#</MudTh>
+                    <MudTh>Spelare</MudTh>
+                    <MudTh class="text-center">Matcher</MudTh>
+                    <MudTh class="text-center">Vinster</MudTh>
+                    <MudTh class="text-center">Förluster</MudTh>
+                    <MudTh class="text-center">Vinst %</MudTh>
+                    <MudTh class="text-center">Ranking</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="#">@context.Position</MudTd>
+                    <MudTd DataLabel="Spelare">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                            <MudAvatar Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled">
+                                @context.Initials
+                            </MudAvatar>
+                            <MudLink Href="@($"/players/{context.PlayerId}")" Underline="Underline.None">
+                                <MudText Color="Color.Primary">@context.Name</MudText>
+                            </MudLink>
+                        </MudStack>
+                    </MudTd>
+                    <MudTd DataLabel="Matcher" Class="text-center">@context.MatchesPlayed</MudTd>
+                    <MudTd DataLabel="Vinster" Class="text-center">@context.Wins</MudTd>
+                    <MudTd DataLabel="Förluster" Class="text-center">@context.Losses</MudTd>
+                    <MudTd DataLabel="Vinst %" Class="text-center">@context.WinPercentage.ToString("P0")</MudTd>
+                    <MudTd DataLabel="Ranking" Class="text-center">@context.Rating.ToString("F0")</MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText Typo="Typo.body2" Class="ma-4" Color="Color.Secondary">
+                        Inga matcher registrerade ännu. Var först med att logga en match!
+                    </MudText>
+                </NoRecordsContent>
+            </MudTable>
+        </div>
+
+        <div class="standings-mobile">
+            @foreach (var row in _rows)
+            {
+                <div class="standings-mobile-row">
+                    <div class="standings-mobile-main">
+                        <span class="standings-mobile-rank">#@row.Position</span>
+                        <MudAvatar Size="Size.Small" Color="Color.Primary" Variant="Variant.Filled" Class="standings-mobile-avatar">
+                            @row.Initials
                         </MudAvatar>
-                        <MudLink Href="@($"/players/{context.PlayerId}")" Underline="Underline.None">
-                            <MudText Color="Color.Primary">@context.Name</MudText>
+                        <MudLink Href="@($"/players/{row.PlayerId}")" Underline="Underline.None" Class="standings-mobile-name">
+                            @row.Name
                         </MudLink>
-                    </MudStack>
-                </MudTd>
-                <MudTd DataLabel="Matcher" Class="text-center">@context.MatchesPlayed</MudTd>
-                <MudTd DataLabel="Vinster" Class="text-center">@context.Wins</MudTd>
-                <MudTd DataLabel="Förluster" Class="text-center">@context.Losses</MudTd>
-                <MudTd DataLabel="Vinst %" Class="text-center">@context.WinPercentage.ToString("P0")</MudTd>
-                <MudTd DataLabel="Ranking" Class="text-center">@context.Rating.ToString("F0")</MudTd>
-            </RowTemplate>
-            <NoRecordsContent>
-                <MudText Typo="Typo.body2" Class="ma-4" Color="Color.Secondary">
-                    Inga matcher registrerade ännu. Var först med att logga en match!
-                </MudText>
-            </NoRecordsContent>
-        </MudTable>
+                        <span class="standings-mobile-rating">@row.Rating.ToString("F0")</span>
+                    </div>
+                    <div class="standings-mobile-stats">
+                        <span>@row.MatchesPlayed matcher</span>
+                        <span class="standings-mobile-wins">@row.Wins V</span>
+                        <span class="standings-mobile-losses">@row.Losses F</span>
+                        <span>@row.WinPercentage.ToString("P0")</span>
+                    </div>
+                </div>
+            }
+        </div>
     </MudStack>
 </MudPaper>
 
