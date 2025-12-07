@@ -107,13 +107,13 @@
         <MudStack Spacing="1">
             <MudText Typo="Typo.subtitle2">Typ av match</MudText>
             <MudButtonGroup Color="Color.Primary">
-                <MudButton Variant="@(_submissionMode == SubmissionMode.OutcomeOnly ? Variant.Filled : Variant.Outlined)" 
-                          OnClick="@(() => OnSubmissionModeChanged(SubmissionMode.OutcomeOnly))">
-                    Endast resultat
-                </MudButton>
                 <MudButton Variant="@(_submissionMode == SubmissionMode.Scored ? Variant.Filled : Variant.Outlined)" 
                           OnClick="@(() => OnSubmissionModeChanged(SubmissionMode.Scored))">
                     Med set-poäng
+                </MudButton>
+                <MudButton Variant="@(_submissionMode == SubmissionMode.OutcomeOnly ? Variant.Filled : Variant.Outlined)" 
+                          OnClick="@(() => OnSubmissionModeChanged(SubmissionMode.OutcomeOnly))">
+                    Endast resultat
                 </MudButton>
             </MudButtonGroup>
         </MudStack>
@@ -222,7 +222,7 @@
     private bool _hasPrefilledIdentity;
     private List<Suggestion> _suggestions = new();
     private string? _lastSuggestionsSource;
-    private SubmissionMode _submissionMode = SubmissionMode.OutcomeOnly;
+    private SubmissionMode _submissionMode = SubmissionMode.Scored;
     private string _outcomeSetsInput = string.Empty;
     private Guid? _selectedFixtureId;
     // private bool _isLoadingFixtures; // kept for future tournament UI; currently not in use
