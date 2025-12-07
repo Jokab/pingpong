@@ -1,6 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using PingPong.Application.Models;
-using PingPong.Application.Players;
 using PingPong.Application.Shared;
 using PingPong.Domain.Players;
 

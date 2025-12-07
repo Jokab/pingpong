@@ -1,6 +1,6 @@
 using PingPong.Application.Models;
 
-namespace PingPong.Application.Interfaces;
+namespace PingPong.Application.History;
 
 public interface IHistoryService
 {

@@ -1,7 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using PingPong.Application.Models;
 using PingPong.Application.Shared;
-using PingPong.Application.Standings;
 using PingPong.Domain.MatchSubmission;
 
 namespace PingPong.Application.Standings;

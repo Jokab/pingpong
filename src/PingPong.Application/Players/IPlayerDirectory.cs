@@ -1,5 +1,3 @@
-using PingPong.Application.Models;
-using PingPong.Application.Players;
 using PingPong.Domain.Players;
 
 namespace PingPong.Application.Players;

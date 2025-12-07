@@ -5,7 +5,7 @@ using PingPong.Api.Contracts;
 using PingPong.Api.Contracts.MatchSubmission;
 using PingPong.Api.Contracts.Tournaments;
 using PingPong.Api.Services;
-using PingPong.Application.Interfaces;
+using PingPong.Application.History;
 using PingPong.Application.MatchSubmission;
 using PingPong.Application.Players;
 using PingPong.Application.Standings;

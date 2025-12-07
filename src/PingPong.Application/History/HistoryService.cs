@@ -1,16 +1,15 @@
 using Microsoft.EntityFrameworkCore;
-using PingPong.Application.Interfaces;
 using PingPong.Application.Models;
+using PingPong.Application.Shared;
 using PingPong.Domain.MatchSubmission;
-using PingPong.Infrastructure.Persistence;
 
-namespace PingPong.Infrastructure.Services;
+namespace PingPong.Application.History;
 
 public sealed class HistoryService : IHistoryService
 {
-    private readonly PingPongDbContext _context;
+    private readonly IPingPongDbContext _context;
 
-    public HistoryService(PingPongDbContext context)
+    public HistoryService(IPingPongDbContext context)
     {
         _context = context;
     }

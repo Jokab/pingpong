@@ -1,6 +1,3 @@
-using PingPong.Application.Models;
-using PingPong.Application.Standings;
-
 namespace PingPong.Application.Standings;
 
 public interface IStandingsService
