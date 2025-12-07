@@ -1,4 +1,4 @@
-namespace PingPong.Application.Models;
+namespace PingPong.Application.MatchSubmission;
 
 public sealed record MatchSubmissionRequest(
     string PlayerOneName,

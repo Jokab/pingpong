@@ -4,6 +4,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using PingPong.Application.Interfaces;
+using PingPong.Application.MatchSubmission;
+using PingPong.Application.Shared;
 using PingPong.Infrastructure.Persistence;
 using PingPong.Infrastructure.Services;
 
@@ -72,6 +74,7 @@ public static class ServiceCollectionExtensions
             }
         );
 
+        services.AddScoped<IPingPongDbContext>(sp => sp.GetRequiredService<PingPongDbContext>());
         services.AddScoped<IMatchSubmissionService, MatchSubmissionService>();
         services.AddScoped<IStandingsService, StandingsService>();
         services.AddScoped<IPlayerDirectory, PlayerDirectory>();

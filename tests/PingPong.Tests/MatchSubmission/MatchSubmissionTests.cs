@@ -1,12 +1,12 @@
 using System.Net.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using PingPong.Api.Contracts;
+using PingPong.Api.Contracts.MatchSubmission;
 using PingPong.Domain.Entities;
 using PingPong.Infrastructure.Persistence;
 using PingPong.Tests.Support;
 
-namespace PingPong.Tests;
+namespace PingPong.Tests.MatchSubmission;
 
 public sealed class MatchSubmissionTests : IClassFixture<IntegrationTestWebApplicationFactory>
 {

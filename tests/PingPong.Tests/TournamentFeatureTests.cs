@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using PingPong.Api.Contracts;
+using PingPong.Api.Contracts.MatchSubmission;
 using PingPong.Domain.Entities;
 using PingPong.Tests.Support;
 

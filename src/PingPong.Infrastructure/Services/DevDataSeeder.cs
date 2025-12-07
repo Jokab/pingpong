@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PingPong.Application.Interfaces;
+using PingPong.Application.MatchSubmission;
 using PingPong.Application.Models;
 using PingPong.Infrastructure.Persistence;
 

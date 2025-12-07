@@ -1,6 +1,6 @@
-using PingPong.Application.Models;
+using PingPong.Application.MatchSubmission;
 
-namespace PingPong.Application.Interfaces;
+namespace PingPong.Application.MatchSubmission;
 
 public interface IMatchSubmissionService
 {

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace PingPong.Api.Contracts;
+namespace PingPong.Api.Contracts.MatchSubmission;
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "kind")]
 [JsonDerivedType(typeof(ScoredMatchSubmissionDto), typeDiscriminator: "scored")]

@@ -1,21 +1,21 @@
 using PingPong.Application.Interfaces;
-using PingPong.Application.Models;
+using PingPong.Application.MatchSubmission;
+using PingPong.Application.Shared;
 using PingPong.Domain.Entities;
 using PingPong.Domain.Exceptions;
 using PingPong.Domain.ValueObjects;
-using PingPong.Infrastructure.Persistence;
 
-namespace PingPong.Infrastructure.Services;
+namespace PingPong.Application.MatchSubmission;
 
 public sealed class MatchSubmissionService : IMatchSubmissionService
 {
-    private readonly PingPongDbContext _context;
+    private readonly IPingPongDbContext _context;
     private readonly IPlayerDirectory _playerDirectory;
     private readonly IRatingService _ratingService;
     private readonly ITournamentCommandService _tournamentCommandService;
 
     public MatchSubmissionService(
-        PingPongDbContext context,
+        IPingPongDbContext context,
         IPlayerDirectory playerDirectory,
         IRatingService ratingService,
         ITournamentCommandService tournamentCommandService

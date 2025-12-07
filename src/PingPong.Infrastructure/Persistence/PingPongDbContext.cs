@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
+using PingPong.Application.Shared;
 using PingPong.Domain.Entities;
 
 namespace PingPong.Infrastructure.Persistence;
 
 public sealed class PingPongDbContext(DbContextOptions<PingPongDbContext> options)
-    : DbContext(options)
+    : DbContext(options), IPingPongDbContext
 {
     public DbSet<Player> Players => Set<Player>();
 
@@ -25,6 +26,7 @@ public sealed class PingPongDbContext(DbContextOptions<PingPongDbContext> option
     public DbSet<TournamentParticipant> TournamentParticipants => Set<TournamentParticipant>();
 
     public DbSet<TournamentFixture> TournamentFixtures => Set<TournamentFixture>();
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
