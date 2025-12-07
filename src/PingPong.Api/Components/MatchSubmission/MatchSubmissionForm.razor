@@ -152,10 +152,10 @@
                                     <MudText Typo="Typo.subtitle2">Set @set.Number</MudText>
                                 </MudItem>
                                 <MudItem xs="12" sm="4">
-                                    <MudNumericField T="int?" @bind-Value="set.PlayerOneScore" Label="Spelare ett" Min="0" Required="true" RequiredError="Ange poäng" />
+                                    <MudNumericField T="int?" @bind-Value="set.PlayerOneScore" Label="Spelare ett" Min="0" Required="true" RequiredError="Ange poäng" Immediate="true" />
                                 </MudItem>
                                 <MudItem xs="12" sm="4">
-                                    <MudNumericField T="int?" @bind-Value="set.PlayerTwoScore" Label="Spelare två" Min="0" Required="true" RequiredError="Ange poäng" />
+                                    <MudNumericField T="int?" @bind-Value="set.PlayerTwoScore" Label="Spelare två" Min="0" Required="true" RequiredError="Ange poäng" Immediate="true" />
                                 </MudItem>
                             </MudGrid>
                             <MudDivider Class="my-1" />
@@ -172,6 +172,13 @@
                         </MudStack>
                     </MudStack>
                 </MudPaper>
+
+                @if (ShowHighScoreWarning)
+                {
+                    <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Dense="true">
+                        Du har skrivit in ett högt resultat, stämmer det?
+                    </MudAlert>
+                }
             </MudStack>
         }
 
@@ -209,6 +216,7 @@
     private double _lastTopScore;
 
     private readonly MatchSubmissionDraft _model = new();
+    private const int HighScoreWarningThreshold = 22;
     private bool _isSubmitting;
     private string? _error;
     private bool _hasPrefilledIdentity;
@@ -295,6 +303,13 @@
         var nextNumber = _model.Sets.Count + 1;
         _model.Sets.Add(new SetDraft(nextNumber));
     }
+
+    private bool ShowHighScoreWarning =>
+        _model.Sets.Any(set =>
+            ExceedsHighScoreThreshold(set.PlayerOneScore) ||
+            ExceedsHighScoreThreshold(set.PlayerTwoScore));
+
+    private static bool ExceedsHighScoreThreshold(int? score) => score is > HighScoreWarningThreshold;
 
     private void OnSubmissionModeChanged(SubmissionMode mode)
     {
