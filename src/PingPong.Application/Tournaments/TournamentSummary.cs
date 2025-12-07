@@ -1,12 +1,11 @@
-using PingPong.Domain.Entities;
+using PingPong.Domain.Tournaments;
+namespace PingPong.Application.Tournaments;
 
-namespace PingPong.Api.Contracts;
-
-public sealed record TournamentSummaryResponse(
+public sealed record TournamentSummary(
     Guid Id,
     string Name,
     string? Description,
-    TournamentStatus StatusValue,
+    TournamentStatus Status,
     int DurationDays,
     int ParticipantCount,
     DateTimeOffset CreatedAt,

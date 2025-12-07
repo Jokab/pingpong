@@ -1,4 +1,5 @@
-namespace PingPong.Domain.Entities;
+using PingPong.Domain.Entities;
+namespace PingPong.Domain.MatchSubmission;
 
 public abstract class MatchEvent
 {

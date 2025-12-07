@@ -1,17 +1,19 @@
 using Microsoft.EntityFrameworkCore;
 using PingPong.Application.Interfaces;
 using PingPong.Application.Models;
+using PingPong.Application.Shared;
+using PingPong.Application.Tournaments;
 using PingPong.Domain.Entities;
-using PingPong.Infrastructure.Persistence;
+using PingPong.Domain.Tournaments;
 
-namespace PingPong.Infrastructure.Services;
+namespace PingPong.Application.Tournaments;
 
 public sealed class TournamentCommandService : ITournamentCommandService
 {
-    private readonly PingPongDbContext _context;
+    private readonly IPingPongDbContext _context;
     private readonly IPlayerDirectory _playerDirectory;
 
-    public TournamentCommandService(PingPongDbContext context, IPlayerDirectory playerDirectory)
+    public TournamentCommandService(IPingPongDbContext context, IPlayerDirectory playerDirectory)
     {
         _context = context;
         _playerDirectory = playerDirectory;

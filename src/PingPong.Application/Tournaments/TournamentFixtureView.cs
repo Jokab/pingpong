@@ -1,6 +1,5 @@
-using PingPong.Domain.Entities;
-
-namespace PingPong.Application.Models;
+using PingPong.Domain.Tournaments;
+namespace PingPong.Application.Tournaments;
 
 public sealed record TournamentFixtureView(
     Guid FixtureId,

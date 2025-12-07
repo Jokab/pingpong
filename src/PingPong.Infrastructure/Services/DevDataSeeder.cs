@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using PingPong.Application.Interfaces;
 using PingPong.Application.MatchSubmission;
 using PingPong.Application.Models;
+using PingPong.Application.Tournaments;
 using PingPong.Infrastructure.Persistence;
 
 namespace PingPong.Infrastructure.Services;

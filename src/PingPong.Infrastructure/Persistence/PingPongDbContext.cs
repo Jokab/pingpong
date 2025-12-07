@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using PingPong.Application.Shared;
 using PingPong.Domain.Entities;
+using PingPong.Domain.MatchSubmission;
+using PingPong.Domain.Tournaments;
 
 namespace PingPong.Infrastructure.Persistence;
 

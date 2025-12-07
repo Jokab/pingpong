@@ -6,6 +6,7 @@ using Microsoft.Extensions.Hosting;
 using PingPong.Application.Interfaces;
 using PingPong.Application.MatchSubmission;
 using PingPong.Application.Shared;
+using PingPong.Application.Tournaments;
 using PingPong.Infrastructure.Persistence;
 using PingPong.Infrastructure.Services;
 

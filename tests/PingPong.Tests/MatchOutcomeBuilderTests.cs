@@ -1,5 +1,5 @@
 using PingPong.Domain.Entities;
-using PingPong.Domain.ValueObjects;
+using PingPong.Domain.MatchSubmission;
 
 namespace PingPong.Tests;
 

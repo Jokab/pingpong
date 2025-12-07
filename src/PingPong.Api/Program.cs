@@ -3,25 +3,29 @@ using MudBlazor.Services;
 using PingPong.Api.Components;
 using PingPong.Api.Contracts;
 using PingPong.Api.Contracts.MatchSubmission;
+using PingPong.Api.Contracts.Tournaments;
 using PingPong.Api.Services;
 using PingPong.Application.Interfaces;
 using PingPong.Application.MatchSubmission;
 using PingPong.Application.Models;
+using PingPong.Application.Tournaments;
 using PingPong.Domain.Exceptions;
 using PingPong.Infrastructure.DependencyInjection;
 using PingPong.Infrastructure.Services;
-
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddRazorComponents().AddInteractiveServerComponents();
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddMudServices();
 builder.Services.AddScoped<UserIdentityService>();
-builder.Services.AddScoped(sp =>
-{
+builder.Services.AddScoped(sp => {
     var navigation = sp.GetRequiredService<Microsoft.AspNetCore.Components.NavigationManager>();
-    return new HttpClient { BaseAddress = new Uri(navigation.BaseUri) };
+    return new HttpClient
+    {
+        BaseAddress = new Uri(navigation.BaseUri)
+    };
 });
 
 var app = builder.Build();
@@ -40,9 +44,9 @@ if (args.Contains("--seed-data", StringComparer.OrdinalIgnoreCase))
     for (var i = 0; i < args.Length; i++)
     {
         if (
-            string.Equals(args[i], "--seed", StringComparison.OrdinalIgnoreCase)
-            && i + 1 < args.Length
-            && int.TryParse(args[i + 1], out var parsed)
+        string.Equals(args[i], "--seed", StringComparison.OrdinalIgnoreCase)
+        && i + 1 < args.Length
+        && int.TryParse(args[i + 1], out var parsed)
         )
         {
             seedValue = parsed;
@@ -86,7 +90,8 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.MapStaticAssets();
-app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode();
 
 app.MapPost(
         "/matches",
@@ -94,14 +99,17 @@ app.MapPost(
             MatchSubmissionDto dto,
             IMatchSubmissionService matchService,
             CancellationToken cancellationToken
-        ) =>
-        {
+        ) => {
             if (
-                string.IsNullOrWhiteSpace(dto.PlayerOneName)
-                || string.IsNullOrWhiteSpace(dto.PlayerTwoName)
+            string.IsNullOrWhiteSpace(dto.PlayerOneName)
+            || string.IsNullOrWhiteSpace(dto.PlayerTwoName)
             )
             {
-                return Results.BadRequest(new { error = "Both player names are required." });
+                return Results.BadRequest(
+                    new
+                    {
+                        error = "Both player names are required."
+                    });
             }
 
             var matchDate = dto.MatchDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
@@ -113,10 +121,8 @@ app.MapPost(
             {
                 case ScoredMatchSubmissionDto scored:
                     sets = scored
-                        .Sets.Select(
-                            (set, index) =>
-                                new SetScore(index + 1, set.PlayerOneScore, set.PlayerTwoScore)
-                        )
+                        .Sets.Select((set, index) =>
+                            new SetScore(index + 1, set.PlayerOneScore, set.PlayerTwoScore))
                         .ToList();
                     outcomeOnlySets = [];
                     break;
@@ -128,7 +134,11 @@ app.MapPost(
                     playerOneWon = outcome.PlayerOneWon;
                     break;
                 default:
-                    return Results.BadRequest(new { error = "Unknown submission kind." });
+                    return Results.BadRequest(
+                        new
+                        {
+                            error = "Unknown submission kind."
+                        });
             }
 
             if (sets.Count == 0 && outcomeOnlySets.Count == 0 && playerOneWon is null)
@@ -137,8 +147,7 @@ app.MapPost(
                     new
                     {
                         error = "Provide either sets, outcome-only set winners, or PlayerOneWon.",
-                    }
-                );
+                    });
             }
 
             var request = new MatchSubmissionRequest(
@@ -149,27 +158,32 @@ app.MapPost(
                 outcomeOnlySets,
                 playerOneWon,
                 dto.SubmittedBy,
-                dto.TournamentFixtureId
-            );
+                dto.TournamentFixtureId);
 
             try
             {
                 var result = await matchService.SubmitMatchAsync(request, cancellationToken);
                 return Results.Created(
                     $"/matches/{result.MatchId}",
-                    new MatchSubmissionResponse(result.MatchId, result.EventId)
-                );
+                    new MatchSubmissionResponse(result.MatchId, result.EventId));
             }
             catch (DomainValidationException ex)
             {
-                return Results.BadRequest(new { error = ex.Message });
+                return Results.BadRequest(
+                    new
+                    {
+                        error = ex.Message
+                    });
             }
             catch (ArgumentException ex)
             {
-                return Results.BadRequest(new { error = ex.Message });
+                return Results.BadRequest(
+                    new
+                    {
+                        error = ex.Message
+                    });
             }
-        }
-    )
+        })
     .WithName("SubmitMatch")
     .DisableAntiforgery();
 
@@ -181,16 +195,14 @@ app.MapGet(
             Guid? playerId,
             IHistoryService historyService,
             CancellationToken cancellationToken
-        ) =>
-        {
+        ) => {
             var p = page.GetValueOrDefault(1);
             var ps = pageSize.GetValueOrDefault(25);
             var (items, total) = await historyService.GetHistoryAsync(
                 p,
                 ps,
                 playerId,
-                cancellationToken
-            );
+                cancellationToken);
             return Results.Ok(
                 new
                 {
@@ -198,16 +210,13 @@ app.MapGet(
                     pageSize = ps,
                     total,
                     items,
-                }
-            );
-        }
-    )
+                });
+        })
     .WithName("GetHistory");
 
 app.MapGet(
         "/api/players",
-        async (string? query, int? size, IPlayerDirectory directory, CancellationToken ct) =>
-        {
+        async (string? query, int? size, IPlayerDirectory directory, CancellationToken ct) => {
             var q = query ?? string.Empty;
             var s = size.GetValueOrDefault(10);
             var results = await directory.SearchAsync(q, s, ct);
@@ -218,25 +227,28 @@ app.MapGet(
                     displayName = r.DisplayName,
                     score = r.Confidence,
                     isExact = r.IsExactMatch,
-                })
-            );
-        }
-    )
+                }));
+        })
     .WithName("SearchPlayers");
 
 app.MapPost(
         "/api/players",
-        async (PlayerCreateDto dto, IPlayerDirectory directory, CancellationToken ct) =>
-        {
+        async (PlayerCreateDto dto, IPlayerDirectory directory, CancellationToken ct) => {
             if (string.IsNullOrWhiteSpace(dto.DisplayName))
-                return Results.BadRequest(new { error = "displayName is required" });
+                return Results.BadRequest(
+                    new
+                    {
+                        error = "displayName is required"
+                    });
             var player = await directory.AddPlayerAsync(dto.DisplayName, ct);
             return Results.Created(
                 $"/api/players/{player.Id}",
-                new { id = player.Id, displayName = player.DisplayName }
-            );
-        }
-    )
+                new
+                {
+                    id = player.Id,
+                    displayName = player.DisplayName
+                });
+        })
     .WithName("CreatePlayer");
 
 //.DisableAntiforgery(); // Alternative: disable antiforgery on this endpoint.
@@ -248,10 +260,11 @@ app.MapGet(
             int? take,
             PingPong.Infrastructure.Persistence.PingPongDbContext db,
             CancellationToken ct
-        ) =>
-        {
+        ) => {
             var top = take.GetValueOrDefault(5);
-            top = top is <= 0 or > 20 ? 5 : top;
+            top = top is <= 0 or > 20
+                ? 5
+                : top;
 
             Guid? meId = null;
             if (!string.IsNullOrWhiteSpace(me))
@@ -271,9 +284,15 @@ app.MapGet(
                 suggestions = await db
                     .MatchEvents.AsNoTracking()
                     .Where(e => e.PlayerOneId == id || e.PlayerTwoId == id)
-                    .Select(e => e.PlayerOneId == id ? e.PlayerTwoId : e.PlayerOneId)
+                    .Select(e => e.PlayerOneId == id
+                        ? e.PlayerTwoId
+                        : e.PlayerOneId)
                     .GroupBy(x => x)
-                    .Select(g => new { OpponentId = g.Key, C = g.Count() })
+                    .Select(g => new
+                    {
+                        OpponentId = g.Key,
+                        C = g.Count()
+                    })
                     .OrderByDescending(x => x.C)
                     .ThenBy(x => x.OpponentId)
                     .Take(top)
@@ -287,8 +306,7 @@ app.MapGet(
                                 p.Id,
                                 p.DisplayName,
                                 x.C,
-                            }
-                    )
+                            })
                     .Select(x => new
                     {
                         x.Id,
@@ -297,24 +315,35 @@ app.MapGet(
                     })
                     .ToListAsync(ct)
                     .ContinueWith(
-                        t => t.Result.Select(r => (r.Id, r.DisplayName, r.C)).ToList(),
-                        ct
-                    );
+                        t => t.Result.Select(r => (r.Id, r.DisplayName, r.C))
+                            .ToList(),
+                        ct);
             }
 
             if (suggestions.Count < top)
             {
-                var excludeList = meId.HasValue ? new List<Guid> { meId.Value } : new List<Guid>();
+                var excludeList = meId.HasValue
+                    ? new List<Guid>
+                    {
+                        meId.Value
+                    }
+                    : new List<Guid>();
 
                 var playerIdsQuery = db
                     .MatchEvents.AsNoTracking()
                     .Select(e => e.PlayerOneId)
-                    .Concat(db.MatchEvents.AsNoTracking().Select(e => e.PlayerTwoId));
+                    .Concat(
+                        db.MatchEvents.AsNoTracking()
+                            .Select(e => e.PlayerTwoId));
 
                 var fill = await playerIdsQuery
                     .Where(pid => !excludeList.Contains(pid))
                     .GroupBy(pid => pid)
-                    .Select(g => new { PlayerId = g.Key, C = g.Count() })
+                    .Select(g => new
+                    {
+                        PlayerId = g.Key,
+                        C = g.Count()
+                    })
                     .OrderByDescending(x => x.C)
                     .ThenBy(x => x.PlayerId)
                     .Take(top - suggestions.Count)
@@ -328,8 +357,7 @@ app.MapGet(
                                 p.Id,
                                 p.DisplayName,
                                 x.C,
-                            }
-                    )
+                            })
                     .Select(x => new
                     {
                         x.Id,
@@ -338,9 +366,9 @@ app.MapGet(
                     })
                     .ToListAsync(ct)
                     .ContinueWith(
-                        t => t.Result.Select(r => (r.Id, r.DisplayName, r.C)).ToList(),
-                        ct
-                    );
+                        t => t.Result.Select(r => (r.Id, r.DisplayName, r.C))
+                            .ToList(),
+                        ct);
 
                 suggestions.AddRange(fill);
             }
@@ -356,16 +384,13 @@ app.MapGet(
                             s.count,
                         })
                         .ToList(),
-                }
-            );
-        }
-    )
+                });
+        })
     .WithName("SuggestOpponents");
 
 app.MapGet(
         "/api/standings",
-        async (IStandingsService standingsService, CancellationToken ct) =>
-        {
+        async (IStandingsService standingsService, CancellationToken ct) => {
             var rows = await standingsService.GetStandingsAsync(ct);
             return Results.Ok(
                 new
@@ -380,10 +405,8 @@ app.MapGet(
                         winPercentage = r.WinPercentage,
                         currentRating = r.CurrentRating,
                     }),
-                }
-            );
-        }
-    )
+                });
+        })
     .WithName("GetStandings");
 
 app.MapPost(
@@ -392,11 +415,14 @@ app.MapPost(
             TournamentCreateDto dto,
             ITournamentCommandService commandService,
             CancellationToken ct
-        ) =>
-        {
+        ) => {
             if (dto is null || string.IsNullOrWhiteSpace(dto.Name))
             {
-                return Results.BadRequest(new { error = "name is required" });
+                return Results.BadRequest(
+                    new
+                    {
+                        error = "name is required"
+                    });
             }
 
             try
@@ -404,54 +430,58 @@ app.MapPost(
                 var request = new CreateTournamentRequest(
                     dto.Name,
                     dto.Description,
-                    dto.DurationDays
-                );
+                    dto.DurationDays);
                 var summary = await commandService.CreateTournamentAsync(request, ct);
-                return Results.Created($"/api/tournaments/{summary.Id}", ToResponse(summary));
+                return Results.Created<TournamentSummaryResponse>($"/api/tournaments/{summary.Id}", ToResponse(summary));
             }
             catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
             {
-                return Results.BadRequest(new { error = ex.Message });
+                return Results.BadRequest(
+                    new
+                    {
+                        error = ex.Message
+                    });
             }
-        }
-    )
+        })
     .WithName("CreateTournament")
     .DisableAntiforgery();
 
 app.MapPost(
         "/api/admin/tournaments/{id:guid}/start",
-        async (Guid id, ITournamentCommandService commandService, CancellationToken ct) =>
-        {
+        async (Guid id, ITournamentCommandService commandService, CancellationToken ct) => {
             try
             {
                 var summary = await commandService.StartTournamentAsync(id, ct);
-                return Results.Ok(ToResponse(summary));
+                return Results.Ok<TournamentSummaryResponse>(ToResponse(summary));
             }
             catch (InvalidOperationException ex)
             {
-                return Results.BadRequest(new { error = ex.Message });
+                return Results.BadRequest(
+                    new
+                    {
+                        error = ex.Message
+                    });
             }
-        }
-    )
+        })
     .WithName("StartTournament")
     .DisableAntiforgery();
 
 app.MapGet(
         "/api/tournaments",
-        async (ITournamentQueryService queryService, CancellationToken ct) =>
-        {
+        async (ITournamentQueryService queryService, CancellationToken ct) => {
             var items = await queryService.GetTournamentsAsync(ct);
             return Results.Ok(
-                new TournamentListResponse { Items = items.Select(ToResponse).ToList() }
-            );
-        }
-    )
+                new TournamentListResponse
+                {
+                    Items = items.Select(ToResponse)
+                        .ToList<TournamentSummaryResponse>()
+                });
+        })
     .WithName("ListTournaments");
 
 app.MapGet(
         "/api/tournaments/{id:guid}",
-        async (Guid id, ITournamentQueryService queryService, CancellationToken ct) =>
-        {
+        async (Guid id, ITournamentQueryService queryService, CancellationToken ct) => {
             var details = await queryService.GetTournamentAsync(id, ct);
             if (details is null)
             {
@@ -462,22 +492,24 @@ app.MapGet(
                 new TournamentDetailsResponse
                 {
                     Summary = ToResponse(details.Summary),
-                    Standings = details.Standings.Select(ToResponse).ToList(),
-                    Fixtures = details.Fixtures.Select(ToResponse).ToList(),
-                }
-            );
-        }
-    )
+                    Standings = details.Standings.Select(ToResponse)
+                        .ToList<TournamentStandingResponse>(),
+                    Fixtures = details.Fixtures.Select(ToResponse)
+                        .ToList<TournamentFixtureResponse>(),
+                });
+        })
     .WithName("GetTournament");
 
 app.MapGet(
         "/api/tournaments/{id:guid}/fixtures",
-        async (Guid id, ITournamentQueryService queryService, CancellationToken ct) =>
-        {
+        async (Guid id, ITournamentQueryService queryService, CancellationToken ct) => {
             var fixtures = await queryService.GetFixturesAsync(id, ct);
-            return Results.Ok(new { items = fixtures.Select(ToResponse) });
-        }
-    )
+            return Results.Ok(
+                new
+                {
+                    items = fixtures.Select(ToResponse)
+                });
+        })
     .WithName("GetTournamentFixtures");
 
 app.MapPost(
@@ -487,24 +519,30 @@ app.MapPost(
             TournamentParticipantDto dto,
             ITournamentCommandService commandService,
             CancellationToken ct
-        ) =>
-        {
+        ) => {
             if (dto is null || string.IsNullOrWhiteSpace(dto.PlayerName))
             {
-                return Results.BadRequest(new { error = "playerName is required" });
+                return Results.BadRequest(
+                    new
+                    {
+                        error = "playerName is required"
+                    });
             }
 
             try
             {
                 var standing = await commandService.JoinTournamentAsync(id, dto.PlayerName, ct);
-                return Results.Ok(ToResponse(standing));
+                return Results.Ok<TournamentStandingResponse>(ToResponse(standing));
             }
             catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
             {
-                return Results.BadRequest(new { error = ex.Message });
+                return Results.BadRequest(
+                    new
+                    {
+                        error = ex.Message
+                    });
             }
-        }
-    )
+        })
     .WithName("JoinTournament")
     .DisableAntiforgery();
 
@@ -515,11 +553,14 @@ app.MapPost(
             TournamentParticipantDto dto,
             ITournamentCommandService commandService,
             CancellationToken ct
-        ) =>
-        {
+        ) => {
             if (dto is null || string.IsNullOrWhiteSpace(dto.PlayerName))
             {
-                return Results.BadRequest(new { error = "playerName is required" });
+                return Results.BadRequest(
+                    new
+                    {
+                        error = "playerName is required"
+                    });
             }
 
             try
@@ -529,10 +570,13 @@ app.MapPost(
             }
             catch (InvalidOperationException ex)
             {
-                return Results.BadRequest(new { error = ex.Message });
+                return Results.BadRequest(
+                    new
+                    {
+                        error = ex.Message
+                    });
             }
-        }
-    )
+        })
     .WithName("LeaveTournament")
     .DisableAntiforgery();
 
@@ -543,13 +587,11 @@ app.MapGet(
             string? playerTwo,
             ITournamentQueryService queryService,
             CancellationToken ct
-        ) =>
-        {
+        ) => {
             var items = await queryService.GetOpenFixturesAsync(
                 playerOne ?? string.Empty,
                 playerTwo ?? string.Empty,
-                ct
-            );
+                ct);
             return Results.Ok(
                 new
                 {
@@ -563,10 +605,8 @@ app.MapGet(
                         opponentId = option.OpponentId,
                         opponentName = option.OpponentName,
                     }),
-                }
-            );
-        }
-    )
+                });
+        })
     .WithName("GetOpenTournamentFixtures");
 
 app.Run();
@@ -583,8 +623,7 @@ public partial class Program
             summary.ParticipantCount,
             summary.CreatedAt,
             summary.StartedAt,
-            summary.EndsAt
-        );
+            summary.EndsAt);
 
     private static TournamentStandingResponse ToResponse(TournamentStandingRow row) =>
         new(
@@ -594,8 +633,7 @@ public partial class Program
             row.Wins,
             row.Losses,
             row.Points,
-            row.CurrentRating
-        );
+            row.CurrentRating);
 
     private static TournamentFixtureResponse ToResponse(TournamentFixtureView fixture) =>
         new(
@@ -609,6 +647,5 @@ public partial class Program
             fixture.WinnerPlayerId,
             fixture.MatchEventId,
             fixture.RoundNumber,
-            fixture.Sequence
-        );
+            fixture.Sequence);
 }

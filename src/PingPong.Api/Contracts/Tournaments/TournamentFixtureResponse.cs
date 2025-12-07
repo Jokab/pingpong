@@ -1,6 +1,5 @@
-using PingPong.Domain.Entities;
-
-namespace PingPong.Api.Contracts;
+using PingPong.Domain.Tournaments;
+namespace PingPong.Api.Contracts.Tournaments;
 
 public sealed record TournamentFixtureResponse(
     Guid Id,

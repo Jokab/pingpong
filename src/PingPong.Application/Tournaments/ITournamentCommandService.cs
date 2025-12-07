@@ -1,6 +1,7 @@
 using PingPong.Application.Models;
+using PingPong.Application.Tournaments;
 
-namespace PingPong.Application.Interfaces;
+namespace PingPong.Application.Tournaments;
 
 public interface ITournamentCommandService
 {

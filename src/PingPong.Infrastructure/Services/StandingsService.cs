@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PingPong.Application.Interfaces;
 using PingPong.Application.Models;
-using PingPong.Domain.ValueObjects;
+using PingPong.Domain.MatchSubmission;
 using PingPong.Infrastructure.Persistence;
 
 namespace PingPong.Infrastructure.Services;

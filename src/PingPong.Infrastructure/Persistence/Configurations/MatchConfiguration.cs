@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PingPong.Domain.Entities;
+using PingPong.Domain.MatchSubmission;
 
 namespace PingPong.Infrastructure.Persistence.Configurations;
 

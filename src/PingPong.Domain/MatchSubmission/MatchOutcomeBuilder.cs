@@ -1,7 +1,5 @@
-using PingPong.Domain.Entities;
 using PingPong.Domain.Exceptions;
-
-namespace PingPong.Domain.ValueObjects;
+namespace PingPong.Domain.MatchSubmission;
 
 public static class MatchOutcomeBuilder
 {

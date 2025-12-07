@@ -1,3 +1,3 @@
-namespace PingPong.Api.Contracts;
+namespace PingPong.Api.Contracts.Tournaments;
 
 public sealed record TournamentParticipantDto(string PlayerName);

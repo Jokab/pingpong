@@ -1,7 +1,5 @@
 using PingPong.Domain.Exceptions;
-using PingPong.Domain.ValueObjects;
-
-namespace PingPong.Domain.Entities;
+namespace PingPong.Domain.MatchSubmission;
 
 public sealed class MatchEventSetEntity
 {

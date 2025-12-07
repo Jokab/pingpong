@@ -1,6 +1,5 @@
 using PingPong.Domain.Exceptions;
-
-namespace PingPong.Domain.ValueObjects;
+namespace PingPong.Domain.MatchSubmission;
 
 /// <summary>
 /// Represents the outcome of a single set.

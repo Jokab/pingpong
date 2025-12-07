@@ -1,4 +1,4 @@
-namespace PingPong.Domain.Entities;
+namespace PingPong.Domain.Tournaments;
 
 public enum TournamentStatus
 {

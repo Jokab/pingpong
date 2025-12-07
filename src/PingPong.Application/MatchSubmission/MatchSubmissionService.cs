@@ -1,9 +1,10 @@
 using PingPong.Application.Interfaces;
 using PingPong.Application.MatchSubmission;
 using PingPong.Application.Shared;
+using PingPong.Application.Tournaments;
 using PingPong.Domain.Entities;
 using PingPong.Domain.Exceptions;
-using PingPong.Domain.ValueObjects;
+using PingPong.Domain.MatchSubmission;
 
 namespace PingPong.Application.MatchSubmission;
 

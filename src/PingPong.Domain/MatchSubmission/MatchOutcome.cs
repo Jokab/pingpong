@@ -1,6 +1,5 @@
 using PingPong.Domain.Exceptions;
-
-namespace PingPong.Domain.ValueObjects;
+namespace PingPong.Domain.MatchSubmission;
 
 /// <summary>
 /// Represents a single effective match outcome after applying event-log rules.

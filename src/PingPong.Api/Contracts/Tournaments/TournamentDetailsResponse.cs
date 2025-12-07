@@ -1,4 +1,4 @@
-namespace PingPong.Api.Contracts;
+namespace PingPong.Api.Contracts.Tournaments;
 
 public sealed class TournamentDetailsResponse
 {
