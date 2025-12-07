@@ -32,7 +32,14 @@
                     <MudTh class="text-center">Vinster</MudTh>
                     <MudTh class="text-center">Förluster</MudTh>
                     <MudTh class="text-center">Vinst %</MudTh>
-                    <MudTh class="text-center">Ranking</MudTh>
+                    <MudTh class="text-center">
+                        <MudTooltip Text="@EloDescription">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.Center" Spacing="1">
+                                <MudText>Ranking</MudText>
+                                <MudIcon Icon="@Icons.Material.Filled.Info" Color="Color.Secondary" Size="Size.Small" />
+                            </MudStack>
+                        </MudTooltip>
+                    </MudTh>
                 </HeaderContent>
                 <RowTemplate>
                     <MudTd DataLabel="#">@context.Position</MudTd>
@@ -66,9 +73,20 @@
                 <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="py-2 px-1">
                     <MudText Typo="Typo.caption" Color="Color.Secondary" Style="min-width: 28px;">#</MudText>
                     <MudText Typo="Typo.caption" Color="Color.Secondary" Style="flex: 1; padding-left: 40px;">Spelare</MudText>
-                    <MudText Typo="Typo.caption" Color="Color.Secondary" Style="min-width: 44px; text-align: right;">Poäng</MudText>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.FlexEnd" Style="min-width: 60px;" Spacing="1">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Poäng</MudText>
+                        <MudIconButton Icon="@Icons.Material.Filled.Info" Size="Size.Small" Color="Color.Secondary"
+                                       Variant="Variant.Text" OnClick="@ToggleRankingInfo" />
+                    </MudStack>
                 </MudStack>
                 <MudDivider />
+                @if (_showRankingInfo)
+                {
+                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="px-1 pb-2">
+                        @EloDescription
+                    </MudText>
+                    <MudDivider />
+                }
 
                 @foreach (var row in _rows)
                 {
@@ -101,9 +119,16 @@
 </MudPaper>
 
 @code {
-    private readonly List<StandingsRowViewModel> _rows = new();
+    private readonly List<StandingsRowViewModel> _rows = [];
+    private const string EloDescription =
+        "Ranking bygger på ELO som är ett poängsystem som jämför spelares relativa styrka. " +
+        "Efter varje match justeras bådas rating beroende på förväntat resultat: " +
+        "vinner du mot en stark motståndare ökar din rating mer, förlorar du mot en svag " +
+        "minskar den mer. Systemet balanserar sig över tid.";
+
     private bool _isLoading;
     private string? _errorMessage;
+    private bool _showRankingInfo;
 
     protected override async Task OnInitializedAsync()
     {
@@ -187,6 +212,11 @@
 
         var initials = string.Concat(parts.Take(2).Select(p => char.ToUpperInvariant(p[0])));
         return initials.Length == 0 ? "?" : initials;
+    }
+
+    private void ToggleRankingInfo()
+    {
+        _showRankingInfo = !_showRankingInfo;
     }
 
     private sealed record StandingsRowViewModel(
