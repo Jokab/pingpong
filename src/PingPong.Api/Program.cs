@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using MudBlazor.Services;
 using PingPong.Api.Components;
 using PingPong.Api.Contracts;
@@ -30,6 +31,28 @@ builder.Services.AddScoped(sp => {
 });
 
 var app = builder.Build();
+
+// Migrate command: supports --migrate-db
+if (args.Contains("--migrate-db", StringComparer.OrdinalIgnoreCase))
+{
+    using var scope = app.Services.CreateScope();
+    var db =
+        scope.ServiceProvider.GetRequiredService<PingPong.Infrastructure.Persistence.PingPongDbContext>();
+    var env = scope.ServiceProvider.GetRequiredService<IHostEnvironment>();
+
+    if (env.IsEnvironment("Testing"))
+    {
+        // For SQLite in tests
+        db.Database.EnsureCreated();
+    }
+    else
+    {
+        // For PostgreSQL in dev/prod
+        db.Database.Migrate();
+    }
+
+    return;
+}
 
 // Seed command: supports --seed-data [--seed <int>] [--reseed]
 if (args.Contains("--seed-data", StringComparer.OrdinalIgnoreCase))
@@ -78,6 +101,8 @@ using (var scope = app.Services.CreateScope())
     var db =
         scope.ServiceProvider.GetRequiredService<PingPong.Infrastructure.Persistence.PingPongDbContext>();
     var env = scope.ServiceProvider.GetRequiredService<IHostEnvironment>();
+    var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+
     if (env.IsEnvironment("Testing"))
     {
         // For SQLite in tests
@@ -86,7 +111,21 @@ using (var scope = app.Services.CreateScope())
     else
     {
         // For PostgreSQL in dev/prod
-        db.Database.Migrate();
+        // Gate migrations behind configuration to avoid slowing down cold starts in production.
+        // Defaults:
+        // - Development: run migrations on startup (nice DX)
+        // - Production/other: only run if explicitly enabled via config:
+        //   - Database:RunMigrationsOnStartup = true
+        //   - or RUN_MIGRATIONS_ON_STARTUP=true
+        var runMigrationsOnStartup =
+            configuration.GetValue<bool?>("Database:RunMigrationsOnStartup")
+            ?? configuration.GetValue<bool?>("RUN_MIGRATIONS_ON_STARTUP")
+            ?? env.IsDevelopment();
+
+        if (runMigrationsOnStartup)
+        {
+            db.Database.Migrate();
+        }
     }
 }
 

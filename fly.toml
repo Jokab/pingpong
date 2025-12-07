@@ -29,6 +29,9 @@ primary_region = 'fra'
     method = 'GET'
     path = '/'
 
+[deploy]
+  release_command = 'dotnet PingPong.Api.dll --migrate-db'
+
 [[vm]]
   memory = '512mb'
   cpu_kind = 'shared'
