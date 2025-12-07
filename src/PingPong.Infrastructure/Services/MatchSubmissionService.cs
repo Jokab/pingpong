@@ -18,7 +18,8 @@ public sealed class MatchSubmissionService : IMatchSubmissionService
         PingPongDbContext context,
         IPlayerDirectory playerDirectory,
         IRatingService ratingService,
-        ITournamentCommandService tournamentCommandService)
+        ITournamentCommandService tournamentCommandService
+    )
     {
         _context = context;
         _playerDirectory = playerDirectory;
@@ -26,7 +27,10 @@ public sealed class MatchSubmissionService : IMatchSubmissionService
         _tournamentCommandService = tournamentCommandService;
     }
 
-    public async Task<MatchSubmissionResult> SubmitMatchAsync(MatchSubmissionRequest request, CancellationToken cancellationToken = default)
+    public async Task<MatchSubmissionResult> SubmitMatchAsync(
+        MatchSubmissionRequest request,
+        CancellationToken cancellationToken = default
+    )
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -35,7 +39,9 @@ public sealed class MatchSubmissionService : IMatchSubmissionService
 
         if (scoredSets.Count > 0 && outcomeOnlySets.Count > 0)
         {
-            throw new DomainValidationException("Cannot mix scored sets with outcome-only set winners.");
+            throw new DomainValidationException(
+                "Cannot mix scored sets with outcome-only set winners."
+            );
         }
 
         var hasScoredSets = scoredSets.Count > 0;
@@ -43,11 +49,19 @@ public sealed class MatchSubmissionService : IMatchSubmissionService
 
         if (!hasScoredSets && !hasOutcomeOnlySets && request.PlayerOneWon is null)
         {
-            throw new DomainValidationException("At least sets, outcome-only set winners, or PlayerOneWon must be provided.");
+            throw new DomainValidationException(
+                "At least sets, outcome-only set winners, or PlayerOneWon must be provided."
+            );
         }
 
-        var playerOne = await _playerDirectory.EnsurePlayerAsync(request.PlayerOneName, cancellationToken);
-        var playerTwo = await _playerDirectory.EnsurePlayerAsync(request.PlayerTwoName, cancellationToken);
+        var playerOne = await _playerDirectory.EnsurePlayerAsync(
+            request.PlayerOneName,
+            cancellationToken
+        );
+        var playerTwo = await _playerDirectory.EnsurePlayerAsync(
+            request.PlayerTwoName,
+            cancellationToken
+        );
 
         var submittedAt = DateTimeOffset.UtcNow;
 
@@ -66,13 +80,19 @@ public sealed class MatchSubmissionService : IMatchSubmissionService
             {
                 var score = setScores[i];
                 if (score.PlayerOneScore < 0 || score.PlayerTwoScore < 0)
-                    throw new DomainValidationException($"Set {i + 1} scores must be non-negative.");
+                    throw new DomainValidationException(
+                        $"Set {i + 1} scores must be non-negative."
+                    );
                 var maxScore = Math.Max(score.PlayerOneScore, score.PlayerTwoScore);
                 var minScore = Math.Min(score.PlayerOneScore, score.PlayerTwoScore);
                 if (maxScore < 11)
-                    throw new DomainValidationException($"Set {i + 1} winning score must be at least 11.");
+                    throw new DomainValidationException(
+                        $"Set {i + 1} winning score must be at least 11."
+                    );
                 if (maxScore - minScore < 2)
-                    throw new DomainValidationException($"Set {i + 1} must be won by at least two points.");
+                    throw new DomainValidationException(
+                        $"Set {i + 1} must be won by at least two points."
+                    );
                 if (score.PlayerOneScore == score.PlayerTwoScore)
                     throw new DomainValidationException($"Set {i + 1} cannot end in a draw.");
             }
@@ -81,7 +101,9 @@ public sealed class MatchSubmissionService : IMatchSubmissionService
             var playerTwoSetsWon = setScores.Count(s => s.PlayerTwoScore > s.PlayerOneScore);
             if (playerOneSetsWon == playerTwoSetsWon)
             {
-                throw new DomainValidationException("Match submission must produce a clear winner.");
+                throw new DomainValidationException(
+                    "Match submission must produce a clear winner."
+                );
             }
 
             var matchEventId = Guid.NewGuid();
@@ -93,10 +115,14 @@ public sealed class MatchSubmissionService : IMatchSubmissionService
                 PlayerTwoId = playerTwo.Id,
                 MatchDate = request.MatchDate,
                 CreatedAt = submittedAt,
-                SubmittedBy = string.IsNullOrWhiteSpace(request.SubmittedBy) ? null : request.SubmittedBy!.Trim(),
+                SubmittedBy = string.IsNullOrWhiteSpace(request.SubmittedBy)
+                    ? null
+                    : request.SubmittedBy!.Trim(),
                 PlayerOne = playerOne,
                 PlayerTwo = playerTwo,
-                Sets = setScores.Select((s, idx) => MatchEventSetEntity.CreateScored(matchEventId, idx + 1, s)).ToList()
+                Sets = setScores
+                    .Select((s, idx) => MatchEventSetEntity.CreateScored(matchEventId, idx + 1, s))
+                    .ToList(),
             };
 
             // Ensure EF doesn't enforce FK to a Match row: keep default
@@ -120,13 +146,17 @@ public sealed class MatchSubmissionService : IMatchSubmissionService
             var p2SetsWon = ordered.Count - p1SetsWon;
             if (p1SetsWon == p2SetsWon)
             {
-                throw new DomainValidationException("Outcome-only sets must produce a clear winner.");
+                throw new DomainValidationException(
+                    "Outcome-only sets must produce a clear winner."
+                );
             }
 
             var derivedWinner = p1SetsWon > p2SetsWon;
             if (request.PlayerOneWon is not null && request.PlayerOneWon.Value != derivedWinner)
             {
-                throw new DomainValidationException("PlayerOneWon does not match the provided set winners.");
+                throw new DomainValidationException(
+                    "PlayerOneWon does not match the provided set winners."
+                );
             }
 
             var matchEventId = Guid.NewGuid();
@@ -138,11 +168,21 @@ public sealed class MatchSubmissionService : IMatchSubmissionService
                 PlayerTwoId = playerTwo.Id,
                 MatchDate = request.MatchDate,
                 CreatedAt = submittedAt,
-                SubmittedBy = string.IsNullOrWhiteSpace(request.SubmittedBy) ? null : request.SubmittedBy!.Trim(),
+                SubmittedBy = string.IsNullOrWhiteSpace(request.SubmittedBy)
+                    ? null
+                    : request.SubmittedBy!.Trim(),
                 PlayerOne = playerOne,
                 PlayerTwo = playerTwo,
                 PlayerOneWon = derivedWinner,
-                Sets = ordered.Select(set => MatchEventSetEntity.CreateOutcomeOnly(matchEventId, set.SetNumber, set.PlayerOneWon)).ToList()
+                Sets = ordered
+                    .Select(set =>
+                        MatchEventSetEntity.CreateOutcomeOnly(
+                            matchEventId,
+                            set.SetNumber,
+                            set.PlayerOneWon
+                        )
+                    )
+                    .ToList(),
             };
             winnerPlayerId = derivedWinner ? playerOne.Id : playerTwo.Id;
         }
@@ -156,10 +196,12 @@ public sealed class MatchSubmissionService : IMatchSubmissionService
                 PlayerTwoId = playerTwo.Id,
                 MatchDate = request.MatchDate,
                 CreatedAt = submittedAt,
-                SubmittedBy = string.IsNullOrWhiteSpace(request.SubmittedBy) ? null : request.SubmittedBy!.Trim(),
+                SubmittedBy = string.IsNullOrWhiteSpace(request.SubmittedBy)
+                    ? null
+                    : request.SubmittedBy!.Trim(),
                 PlayerOne = playerOne,
                 PlayerTwo = playerTwo,
-                PlayerOneWon = request.PlayerOneWon!.Value
+                PlayerOneWon = request.PlayerOneWon!.Value,
             };
 
             winnerPlayerId = request.PlayerOneWon!.Value ? playerOne.Id : playerTwo.Id;
@@ -170,7 +212,12 @@ public sealed class MatchSubmissionService : IMatchSubmissionService
 
         if (request.TournamentFixtureId is Guid fixtureId)
         {
-            await _tournamentCommandService.RecordFixtureResultAsync(fixtureId, winnerPlayerId, matchEvent.Id, cancellationToken);
+            await _tournamentCommandService.RecordFixtureResultAsync(
+                fixtureId,
+                winnerPlayerId,
+                matchEvent.Id,
+                cancellationToken
+            );
         }
 
         await _ratingService.RebuildAllRatingsAsync(cancellationToken);

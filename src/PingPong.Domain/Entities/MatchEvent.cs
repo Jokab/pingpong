@@ -31,9 +31,7 @@ public abstract class MatchEvent
     public ICollection<MatchEventSetEntity> Sets { get; set; } = new List<MatchEventSetEntity>();
 }
 
-public sealed class ScoredMatchEvent : MatchEvent
-{
-}
+public sealed class ScoredMatchEvent : MatchEvent { }
 
 public sealed class OutcomeOnlyMatchEvent : MatchEvent
 {

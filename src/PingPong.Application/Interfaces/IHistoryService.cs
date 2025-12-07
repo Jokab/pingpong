@@ -8,5 +8,6 @@ public interface IHistoryService
         int page,
         int pageSize,
         Guid? playerId = null,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 }

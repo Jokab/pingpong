@@ -40,11 +40,39 @@ public sealed class HeadToHeadServiceTests
             EventType = MatchEventType.Recorded,
             Sets =
             [
-                new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 1, PlayerOneScore = 11, PlayerTwoScore = 9 },
-                new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 2, PlayerOneScore = 11, PlayerTwoScore = 7 },
-                new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 3, PlayerOneScore = 5, PlayerTwoScore = 11 },
-                new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 4, PlayerOneScore = 11, PlayerTwoScore = 6 }
-            ]
+                new MatchEventSetEntity
+                {
+                    Id = Guid.NewGuid(),
+                    MatchEventId = Guid.Empty,
+                    SetNumber = 1,
+                    PlayerOneScore = 11,
+                    PlayerTwoScore = 9,
+                },
+                new MatchEventSetEntity
+                {
+                    Id = Guid.NewGuid(),
+                    MatchEventId = Guid.Empty,
+                    SetNumber = 2,
+                    PlayerOneScore = 11,
+                    PlayerTwoScore = 7,
+                },
+                new MatchEventSetEntity
+                {
+                    Id = Guid.NewGuid(),
+                    MatchEventId = Guid.Empty,
+                    SetNumber = 3,
+                    PlayerOneScore = 5,
+                    PlayerTwoScore = 11,
+                },
+                new MatchEventSetEntity
+                {
+                    Id = Guid.NewGuid(),
+                    MatchEventId = Guid.Empty,
+                    SetNumber = 4,
+                    PlayerOneScore = 11,
+                    PlayerTwoScore = 6,
+                },
+            ],
         };
 
         // Today: Alice beats Bob 3-0
@@ -58,10 +86,31 @@ public sealed class HeadToHeadServiceTests
             EventType = MatchEventType.Recorded,
             Sets =
             [
-                new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 1, PlayerOneScore = 11, PlayerTwoScore = 7 },
-                new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 2, PlayerOneScore = 11, PlayerTwoScore = 4 },
-                new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 3, PlayerOneScore = 11, PlayerTwoScore = 9 }
-            ]
+                new MatchEventSetEntity
+                {
+                    Id = Guid.NewGuid(),
+                    MatchEventId = Guid.Empty,
+                    SetNumber = 1,
+                    PlayerOneScore = 11,
+                    PlayerTwoScore = 7,
+                },
+                new MatchEventSetEntity
+                {
+                    Id = Guid.NewGuid(),
+                    MatchEventId = Guid.Empty,
+                    SetNumber = 2,
+                    PlayerOneScore = 11,
+                    PlayerTwoScore = 4,
+                },
+                new MatchEventSetEntity
+                {
+                    Id = Guid.NewGuid(),
+                    MatchEventId = Guid.Empty,
+                    SetNumber = 3,
+                    PlayerOneScore = 11,
+                    PlayerTwoScore = 9,
+                },
+            ],
         };
 
         context.MatchEvents.AddRange(ev1, ev2);
@@ -84,7 +133,7 @@ public sealed class HeadToHeadServiceTests
         Assert.Equal(alice.Id, details.PlayerAId);
         Assert.Equal(bob.Id, details.PlayerBId);
         Assert.Equal(2, details.MatchesPlayed);
-        Assert.Equal(1, details.Wins);   // Alice won one of two
+        Assert.Equal(1, details.Wins); // Alice won one of two
         Assert.Equal(1, details.Losses);
         // Sanity checks only; exact set counts verified elsewhere
         Assert.True(details.WinPercentage is >= 0 and <= 1);
@@ -113,22 +162,52 @@ public sealed class HeadToHeadServiceTests
         var bob = Player.Create("Bob", now);
         context.Players.AddRange(alice, bob);
 
-        context.MatchEvents.Add(new ScoredMatchEvent
-        {
-            Id = Guid.NewGuid(),
-            PlayerOneId = alice.Id,
-            PlayerTwoId = bob.Id,
-            MatchDate = today,
-            CreatedAt = now,
-            EventType = MatchEventType.Recorded,
-            Sets =
-            [
-                new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 1, PlayerOneScore = 11, PlayerTwoScore = 8 },
-                new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 2, PlayerOneScore = 11, PlayerTwoScore = 9 },
-                new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 3, PlayerOneScore = 7, PlayerTwoScore = 11 },
-                new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 4, PlayerOneScore = 11, PlayerTwoScore = 5 }
-            ]
-        });
+        context.MatchEvents.Add(
+            new ScoredMatchEvent
+            {
+                Id = Guid.NewGuid(),
+                PlayerOneId = alice.Id,
+                PlayerTwoId = bob.Id,
+                MatchDate = today,
+                CreatedAt = now,
+                EventType = MatchEventType.Recorded,
+                Sets =
+                [
+                    new MatchEventSetEntity
+                    {
+                        Id = Guid.NewGuid(),
+                        MatchEventId = Guid.Empty,
+                        SetNumber = 1,
+                        PlayerOneScore = 11,
+                        PlayerTwoScore = 8,
+                    },
+                    new MatchEventSetEntity
+                    {
+                        Id = Guid.NewGuid(),
+                        MatchEventId = Guid.Empty,
+                        SetNumber = 2,
+                        PlayerOneScore = 11,
+                        PlayerTwoScore = 9,
+                    },
+                    new MatchEventSetEntity
+                    {
+                        Id = Guid.NewGuid(),
+                        MatchEventId = Guid.Empty,
+                        SetNumber = 3,
+                        PlayerOneScore = 7,
+                        PlayerTwoScore = 11,
+                    },
+                    new MatchEventSetEntity
+                    {
+                        Id = Guid.NewGuid(),
+                        MatchEventId = Guid.Empty,
+                        SetNumber = 4,
+                        PlayerOneScore = 11,
+                        PlayerTwoScore = 5,
+                    },
+                ],
+            }
+        );
 
         // Fix child FKs
         foreach (var e in context.MatchEvents.Local)
@@ -150,5 +229,3 @@ public sealed class HeadToHeadServiceTests
         Assert.Equal(0, vsBob.Losses);
     }
 }
-
-

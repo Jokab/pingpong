@@ -3,7 +3,8 @@ using PingPong.Domain.Entities;
 
 namespace PingPong.Infrastructure.Persistence;
 
-public sealed class PingPongDbContext(DbContextOptions<PingPongDbContext> options) : DbContext(options)
+public sealed class PingPongDbContext(DbContextOptions<PingPongDbContext> options)
+    : DbContext(options)
 {
     public DbSet<Player> Players => Set<Player>();
 

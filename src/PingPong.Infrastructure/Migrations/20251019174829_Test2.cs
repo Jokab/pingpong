@@ -18,7 +18,8 @@ namespace PingPong.Infrastructure.Migrations
                 nullable: false,
                 oldClrType: typeof(string),
                 oldType: "TEXT",
-                oldMaxLength: 200);
+                oldMaxLength: 200
+            );
 
             migrationBuilder.AlterColumn<string>(
                 name: "DisplayName",
@@ -28,7 +29,8 @@ namespace PingPong.Infrastructure.Migrations
                 nullable: false,
                 oldClrType: typeof(string),
                 oldType: "TEXT",
-                oldMaxLength: 200);
+                oldMaxLength: 200
+            );
 
             migrationBuilder.AlterColumn<double>(
                 name: "CurrentRating",
@@ -40,7 +42,8 @@ namespace PingPong.Infrastructure.Migrations
                 oldClrType: typeof(float),
                 oldType: "REAL",
                 oldPrecision: 8,
-                oldScale: 2);
+                oldScale: 2
+            );
 
             migrationBuilder.AlterColumn<double>(
                 name: "ConfidenceScore",
@@ -52,7 +55,8 @@ namespace PingPong.Infrastructure.Migrations
                 oldClrType: typeof(float),
                 oldType: "REAL",
                 oldPrecision: 5,
-                oldScale: 4);
+                oldScale: 4
+            );
 
             migrationBuilder.AlterColumn<string>(
                 name: "AliasName",
@@ -62,7 +66,8 @@ namespace PingPong.Infrastructure.Migrations
                 nullable: false,
                 oldClrType: typeof(string),
                 oldType: "TEXT",
-                oldMaxLength: 200);
+                oldMaxLength: 200
+            );
 
             migrationBuilder.AlterColumn<int>(
                 name: "SetNumber",
@@ -70,7 +75,8 @@ namespace PingPong.Infrastructure.Migrations
                 type: "integer",
                 nullable: false,
                 oldClrType: typeof(int),
-                oldType: "INTEGER");
+                oldType: "INTEGER"
+            );
 
             migrationBuilder.AlterColumn<int>(
                 name: "PlayerTwoScore",
@@ -78,7 +84,8 @@ namespace PingPong.Infrastructure.Migrations
                 type: "integer",
                 nullable: false,
                 oldClrType: typeof(int),
-                oldType: "INTEGER");
+                oldType: "INTEGER"
+            );
 
             migrationBuilder.AlterColumn<int>(
                 name: "PlayerOneScore",
@@ -86,7 +93,8 @@ namespace PingPong.Infrastructure.Migrations
                 type: "integer",
                 nullable: false,
                 oldClrType: typeof(int),
-                oldType: "INTEGER");
+                oldType: "INTEGER"
+            );
 
             migrationBuilder.AlterColumn<int>(
                 name: "SetNumber",
@@ -94,7 +102,8 @@ namespace PingPong.Infrastructure.Migrations
                 type: "integer",
                 nullable: false,
                 oldClrType: typeof(int),
-                oldType: "INTEGER");
+                oldType: "INTEGER"
+            );
 
             migrationBuilder.AlterColumn<int>(
                 name: "PlayerTwoScore",
@@ -102,7 +111,8 @@ namespace PingPong.Infrastructure.Migrations
                 type: "integer",
                 nullable: false,
                 oldClrType: typeof(int),
-                oldType: "INTEGER");
+                oldType: "INTEGER"
+            );
 
             migrationBuilder.AlterColumn<int>(
                 name: "PlayerOneScore",
@@ -110,7 +120,8 @@ namespace PingPong.Infrastructure.Migrations
                 type: "integer",
                 nullable: false,
                 oldClrType: typeof(int),
-                oldType: "INTEGER");
+                oldType: "INTEGER"
+            );
 
             migrationBuilder.AlterColumn<string>(
                 name: "SubmittedBy",
@@ -119,7 +130,8 @@ namespace PingPong.Infrastructure.Migrations
                 nullable: true,
                 oldClrType: typeof(string),
                 oldType: "TEXT",
-                oldNullable: true);
+                oldNullable: true
+            );
 
             migrationBuilder.AlterColumn<int>(
                 name: "EventType",
@@ -127,7 +139,8 @@ namespace PingPong.Infrastructure.Migrations
                 type: "integer",
                 nullable: false,
                 oldClrType: typeof(int),
-                oldType: "INTEGER");
+                oldType: "INTEGER"
+            );
 
             migrationBuilder.AlterColumn<int>(
                 name: "Status",
@@ -135,7 +148,8 @@ namespace PingPong.Infrastructure.Migrations
                 type: "integer",
                 nullable: false,
                 oldClrType: typeof(int),
-                oldType: "INTEGER");
+                oldType: "INTEGER"
+            );
 
             migrationBuilder.AlterColumn<int>(
                 name: "PlayerTwoSetsWon",
@@ -143,7 +157,8 @@ namespace PingPong.Infrastructure.Migrations
                 type: "integer",
                 nullable: false,
                 oldClrType: typeof(int),
-                oldType: "INTEGER");
+                oldType: "INTEGER"
+            );
 
             migrationBuilder.AlterColumn<int>(
                 name: "PlayerOneSetsWon",
@@ -151,7 +166,8 @@ namespace PingPong.Infrastructure.Migrations
                 type: "integer",
                 nullable: false,
                 oldClrType: typeof(int),
-                oldType: "INTEGER");
+                oldType: "INTEGER"
+            );
         }
 
         /// <inheritdoc />
@@ -165,7 +181,8 @@ namespace PingPong.Infrastructure.Migrations
                 nullable: false,
                 oldClrType: typeof(string),
                 oldType: "character varying(200)",
-                oldMaxLength: 200);
+                oldMaxLength: 200
+            );
 
             migrationBuilder.AlterColumn<string>(
                 name: "DisplayName",
@@ -175,7 +192,8 @@ namespace PingPong.Infrastructure.Migrations
                 nullable: false,
                 oldClrType: typeof(string),
                 oldType: "character varying(200)",
-                oldMaxLength: 200);
+                oldMaxLength: 200
+            );
 
             migrationBuilder.AlterColumn<float>(
                 name: "CurrentRating",
@@ -187,7 +205,8 @@ namespace PingPong.Infrastructure.Migrations
                 oldClrType: typeof(double),
                 oldType: "double precision",
                 oldPrecision: 8,
-                oldScale: 2);
+                oldScale: 2
+            );
 
             migrationBuilder.AlterColumn<float>(
                 name: "ConfidenceScore",
@@ -199,7 +218,8 @@ namespace PingPong.Infrastructure.Migrations
                 oldClrType: typeof(double),
                 oldType: "double precision",
                 oldPrecision: 5,
-                oldScale: 4);
+                oldScale: 4
+            );
 
             migrationBuilder.AlterColumn<string>(
                 name: "AliasName",
@@ -209,7 +229,8 @@ namespace PingPong.Infrastructure.Migrations
                 nullable: false,
                 oldClrType: typeof(string),
                 oldType: "character varying(200)",
-                oldMaxLength: 200);
+                oldMaxLength: 200
+            );
 
             migrationBuilder.AlterColumn<int>(
                 name: "SetNumber",
@@ -217,7 +238,8 @@ namespace PingPong.Infrastructure.Migrations
                 type: "INTEGER",
                 nullable: false,
                 oldClrType: typeof(int),
-                oldType: "integer");
+                oldType: "integer"
+            );
 
             migrationBuilder.AlterColumn<int>(
                 name: "PlayerTwoScore",
@@ -225,7 +247,8 @@ namespace PingPong.Infrastructure.Migrations
                 type: "INTEGER",
                 nullable: false,
                 oldClrType: typeof(int),
-                oldType: "integer");
+                oldType: "integer"
+            );
 
             migrationBuilder.AlterColumn<int>(
                 name: "PlayerOneScore",
@@ -233,7 +256,8 @@ namespace PingPong.Infrastructure.Migrations
                 type: "INTEGER",
                 nullable: false,
                 oldClrType: typeof(int),
-                oldType: "integer");
+                oldType: "integer"
+            );
 
             migrationBuilder.AlterColumn<int>(
                 name: "SetNumber",
@@ -241,7 +265,8 @@ namespace PingPong.Infrastructure.Migrations
                 type: "INTEGER",
                 nullable: false,
                 oldClrType: typeof(int),
-                oldType: "integer");
+                oldType: "integer"
+            );
 
             migrationBuilder.AlterColumn<int>(
                 name: "PlayerTwoScore",
@@ -249,7 +274,8 @@ namespace PingPong.Infrastructure.Migrations
                 type: "INTEGER",
                 nullable: false,
                 oldClrType: typeof(int),
-                oldType: "integer");
+                oldType: "integer"
+            );
 
             migrationBuilder.AlterColumn<int>(
                 name: "PlayerOneScore",
@@ -257,7 +283,8 @@ namespace PingPong.Infrastructure.Migrations
                 type: "INTEGER",
                 nullable: false,
                 oldClrType: typeof(int),
-                oldType: "integer");
+                oldType: "integer"
+            );
 
             migrationBuilder.AlterColumn<string>(
                 name: "SubmittedBy",
@@ -266,7 +293,8 @@ namespace PingPong.Infrastructure.Migrations
                 nullable: true,
                 oldClrType: typeof(string),
                 oldType: "text",
-                oldNullable: true);
+                oldNullable: true
+            );
 
             migrationBuilder.AlterColumn<int>(
                 name: "EventType",
@@ -274,7 +302,8 @@ namespace PingPong.Infrastructure.Migrations
                 type: "INTEGER",
                 nullable: false,
                 oldClrType: typeof(int),
-                oldType: "integer");
+                oldType: "integer"
+            );
 
             migrationBuilder.AlterColumn<int>(
                 name: "Status",
@@ -282,7 +311,8 @@ namespace PingPong.Infrastructure.Migrations
                 type: "INTEGER",
                 nullable: false,
                 oldClrType: typeof(int),
-                oldType: "integer");
+                oldType: "integer"
+            );
 
             migrationBuilder.AlterColumn<int>(
                 name: "PlayerTwoSetsWon",
@@ -290,7 +320,8 @@ namespace PingPong.Infrastructure.Migrations
                 type: "INTEGER",
                 nullable: false,
                 oldClrType: typeof(int),
-                oldType: "integer");
+                oldType: "integer"
+            );
 
             migrationBuilder.AlterColumn<int>(
                 name: "PlayerOneSetsWon",
@@ -298,7 +329,8 @@ namespace PingPong.Infrastructure.Migrations
                 type: "INTEGER",
                 nullable: false,
                 oldClrType: typeof(int),
-                oldType: "integer");
+                oldType: "integer"
+            );
         }
     }
 }

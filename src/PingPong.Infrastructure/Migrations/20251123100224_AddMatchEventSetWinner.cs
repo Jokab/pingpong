@@ -16,7 +16,8 @@ namespace PingPong.Infrastructure.Migrations
                 type: "integer",
                 nullable: true,
                 oldClrType: typeof(int),
-                oldType: "integer");
+                oldType: "integer"
+            );
 
             migrationBuilder.AlterColumn<int>(
                 name: "PlayerOneScore",
@@ -24,21 +25,21 @@ namespace PingPong.Infrastructure.Migrations
                 type: "integer",
                 nullable: true,
                 oldClrType: typeof(int),
-                oldType: "integer");
+                oldType: "integer"
+            );
 
             migrationBuilder.AddColumn<bool>(
                 name: "PlayerOneWon",
                 table: "MatchEventSets",
                 type: "boolean",
-                nullable: true);
+                nullable: true
+            );
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "PlayerOneWon",
-                table: "MatchEventSets");
+            migrationBuilder.DropColumn(name: "PlayerOneWon", table: "MatchEventSets");
 
             migrationBuilder.AlterColumn<int>(
                 name: "PlayerTwoScore",
@@ -48,7 +49,8 @@ namespace PingPong.Infrastructure.Migrations
                 defaultValue: 0,
                 oldClrType: typeof(int),
                 oldType: "integer",
-                oldNullable: true);
+                oldNullable: true
+            );
 
             migrationBuilder.AlterColumn<int>(
                 name: "PlayerOneScore",
@@ -58,7 +60,8 @@ namespace PingPong.Infrastructure.Migrations
                 defaultValue: 0,
                 oldClrType: typeof(int),
                 oldType: "integer",
-                oldNullable: true);
+                oldNullable: true
+            );
         }
     }
 }

@@ -7,5 +7,5 @@ public sealed record TournamentStandingRow(
     int Wins,
     int Losses,
     int Points,
-    double CurrentRating);
-
+    double CurrentRating
+);

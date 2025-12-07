@@ -21,12 +21,20 @@ public sealed class MatchEventSetEntity
 
     public MatchSetResult ToSetResult() =>
         PlayerOneScore.HasValue && PlayerTwoScore.HasValue
-            ? new ScoredMatchSetResult(SetNumber, new MatchSetScore(PlayerOneScore.Value, PlayerTwoScore.Value))
-            : PlayerOneWon.HasValue
-                ? new OutcomeOnlyMatchSetResult(SetNumber, PlayerOneWon.Value)
-                : throw new DomainValidationException("MatchEventSetEntity must have either scores or a winner.");
+            ? new ScoredMatchSetResult(
+                SetNumber,
+                new MatchSetScore(PlayerOneScore.Value, PlayerTwoScore.Value)
+            )
+        : PlayerOneWon.HasValue ? new OutcomeOnlyMatchSetResult(SetNumber, PlayerOneWon.Value)
+        : throw new DomainValidationException(
+            "MatchEventSetEntity must have either scores or a winner."
+        );
 
-    public static MatchEventSetEntity CreateScored(Guid matchEventId, int setNumber, MatchSetScore score)
+    public static MatchEventSetEntity CreateScored(
+        Guid matchEventId,
+        int setNumber,
+        MatchSetScore score
+    )
     {
         ArgumentNullException.ThrowIfNull(score);
 
@@ -37,11 +45,15 @@ public sealed class MatchEventSetEntity
             SetNumber = setNumber,
             PlayerOneScore = score.PlayerOneScore,
             PlayerTwoScore = score.PlayerTwoScore,
-            PlayerOneWon = null
+            PlayerOneWon = null,
         };
     }
 
-    public static MatchEventSetEntity CreateOutcomeOnly(Guid matchEventId, int setNumber, bool playerOneWon) =>
+    public static MatchEventSetEntity CreateOutcomeOnly(
+        Guid matchEventId,
+        int setNumber,
+        bool playerOneWon
+    ) =>
         new()
         {
             Id = Guid.NewGuid(),
@@ -49,6 +61,6 @@ public sealed class MatchEventSetEntity
             SetNumber = setNumber,
             PlayerOneScore = null,
             PlayerTwoScore = null,
-            PlayerOneWon = playerOneWon
+            PlayerOneWon = playerOneWon,
         };
 }

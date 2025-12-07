@@ -32,10 +32,31 @@ public sealed class StandingsServiceTests
         context.Players.AddRange(alice, bob, carol, dave);
 
         context.PlayerRatings.AddRange(
-            new PlayerRating { PlayerId = alice.Id, CurrentRating = 1050, LastUpdatedAt = now },
-            new PlayerRating { PlayerId = bob.Id, CurrentRating = 990, LastUpdatedAt = now },
-            new PlayerRating { PlayerId = carol.Id, CurrentRating = 1010, LastUpdatedAt = now },
-            new PlayerRating { PlayerId = dave.Id, CurrentRating = 950, LastUpdatedAt = now });
+            new PlayerRating
+            {
+                PlayerId = alice.Id,
+                CurrentRating = 1050,
+                LastUpdatedAt = now,
+            },
+            new PlayerRating
+            {
+                PlayerId = bob.Id,
+                CurrentRating = 990,
+                LastUpdatedAt = now,
+            },
+            new PlayerRating
+            {
+                PlayerId = carol.Id,
+                CurrentRating = 1010,
+                LastUpdatedAt = now,
+            },
+            new PlayerRating
+            {
+                PlayerId = dave.Id,
+                CurrentRating = 950,
+                LastUpdatedAt = now,
+            }
+        );
 
         context.MatchEvents.AddRange(
             new ScoredMatchEvent
@@ -48,11 +69,39 @@ public sealed class StandingsServiceTests
                 EventType = MatchEventType.Recorded,
                 Sets =
                 [
-                    new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 1, PlayerOneScore = 11, PlayerTwoScore = 7 },
-                    new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 2, PlayerOneScore = 11, PlayerTwoScore = 9 },
-                    new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 3, PlayerOneScore = 9, PlayerTwoScore = 11 },
-                    new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 4, PlayerOneScore = 11, PlayerTwoScore = 8 }
-                ]
+                    new MatchEventSetEntity
+                    {
+                        Id = Guid.NewGuid(),
+                        MatchEventId = Guid.Empty,
+                        SetNumber = 1,
+                        PlayerOneScore = 11,
+                        PlayerTwoScore = 7,
+                    },
+                    new MatchEventSetEntity
+                    {
+                        Id = Guid.NewGuid(),
+                        MatchEventId = Guid.Empty,
+                        SetNumber = 2,
+                        PlayerOneScore = 11,
+                        PlayerTwoScore = 9,
+                    },
+                    new MatchEventSetEntity
+                    {
+                        Id = Guid.NewGuid(),
+                        MatchEventId = Guid.Empty,
+                        SetNumber = 3,
+                        PlayerOneScore = 9,
+                        PlayerTwoScore = 11,
+                    },
+                    new MatchEventSetEntity
+                    {
+                        Id = Guid.NewGuid(),
+                        MatchEventId = Guid.Empty,
+                        SetNumber = 4,
+                        PlayerOneScore = 11,
+                        PlayerTwoScore = 8,
+                    },
+                ],
             },
             new ScoredMatchEvent
             {
@@ -64,10 +113,31 @@ public sealed class StandingsServiceTests
                 EventType = MatchEventType.Recorded,
                 Sets =
                 [
-                    new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 1, PlayerOneScore = 11, PlayerTwoScore = 3 },
-                    new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 2, PlayerOneScore = 11, PlayerTwoScore = 6 },
-                    new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 3, PlayerOneScore = 11, PlayerTwoScore = 4 }
-                ]
+                    new MatchEventSetEntity
+                    {
+                        Id = Guid.NewGuid(),
+                        MatchEventId = Guid.Empty,
+                        SetNumber = 1,
+                        PlayerOneScore = 11,
+                        PlayerTwoScore = 3,
+                    },
+                    new MatchEventSetEntity
+                    {
+                        Id = Guid.NewGuid(),
+                        MatchEventId = Guid.Empty,
+                        SetNumber = 2,
+                        PlayerOneScore = 11,
+                        PlayerTwoScore = 6,
+                    },
+                    new MatchEventSetEntity
+                    {
+                        Id = Guid.NewGuid(),
+                        MatchEventId = Guid.Empty,
+                        SetNumber = 3,
+                        PlayerOneScore = 11,
+                        PlayerTwoScore = 4,
+                    },
+                ],
             },
             new ScoredMatchEvent
             {
@@ -79,11 +149,33 @@ public sealed class StandingsServiceTests
                 EventType = MatchEventType.Recorded,
                 Sets =
                 [
-                    new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 1, PlayerOneScore = 5, PlayerTwoScore = 11 },
-                    new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 2, PlayerOneScore = 7, PlayerTwoScore = 11 },
-                    new MatchEventSetEntity { Id = Guid.NewGuid(), MatchEventId = Guid.Empty, SetNumber = 3, PlayerOneScore = 9, PlayerTwoScore = 11 }
-                ]
-            });
+                    new MatchEventSetEntity
+                    {
+                        Id = Guid.NewGuid(),
+                        MatchEventId = Guid.Empty,
+                        SetNumber = 1,
+                        PlayerOneScore = 5,
+                        PlayerTwoScore = 11,
+                    },
+                    new MatchEventSetEntity
+                    {
+                        Id = Guid.NewGuid(),
+                        MatchEventId = Guid.Empty,
+                        SetNumber = 2,
+                        PlayerOneScore = 7,
+                        PlayerTwoScore = 11,
+                    },
+                    new MatchEventSetEntity
+                    {
+                        Id = Guid.NewGuid(),
+                        MatchEventId = Guid.Empty,
+                        SetNumber = 3,
+                        PlayerOneScore = 9,
+                        PlayerTwoScore = 11,
+                    },
+                ],
+            }
+        );
 
         // Ensure MatchEventId is set for child sets (simulate EF cascade keying)
         foreach (var e in context.MatchEvents.Local)
@@ -106,7 +198,8 @@ public sealed class StandingsServiceTests
             first => Assert.Equal(alice.Id, first.PlayerId),
             second => Assert.Equal(carol.Id, second.PlayerId),
             third => Assert.Equal(bob.Id, third.PlayerId),
-            fourth => Assert.Equal(dave.Id, fourth.PlayerId));
+            fourth => Assert.Equal(dave.Id, fourth.PlayerId)
+        );
 
         var aliceRow = standings.First(row => row.PlayerId == alice.Id);
         Assert.Equal(2, aliceRow.MatchesPlayed);

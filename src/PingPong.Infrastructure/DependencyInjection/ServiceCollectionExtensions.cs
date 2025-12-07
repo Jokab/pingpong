@@ -11,60 +11,66 @@ namespace PingPong.Infrastructure.DependencyInjection;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        services.AddDbContext<PingPongDbContext>((serviceProvider, options) =>
-        {
-            var env = serviceProvider.GetRequiredService<IHostEnvironment>();
-            var isTesting = env.IsEnvironment("Testing");
-
-            // In tests, prefer SQLite. If a shared SqliteConnection is registered, use it to keep the in-memory DB alive.
-            if (isTesting)
+        services.AddDbContext<PingPongDbContext>(
+            (serviceProvider, options) =>
             {
-                var sqliteConnection = serviceProvider.GetService<SqliteConnection>();
-                if (sqliteConnection is not null)
+                var env = serviceProvider.GetRequiredService<IHostEnvironment>();
+                var isTesting = env.IsEnvironment("Testing");
+
+                // In tests, prefer SQLite. If a shared SqliteConnection is registered, use it to keep the in-memory DB alive.
+                if (isTesting)
                 {
-                    options.UseSqlite(sqliteConnection);
+                    var sqliteConnection = serviceProvider.GetService<SqliteConnection>();
+                    if (sqliteConnection is not null)
+                    {
+                        options.UseSqlite(sqliteConnection);
+                    }
+                    else
+                    {
+                        options.UseSqlite("Data Source=:memory:");
+                    }
+                    return;
                 }
-                else
+
+                // Production/dev: PostgreSQL
+                // Check multiple sources for connection string:
+                // 1. ConnectionStrings:DefaultConnection (standard ASP.NET Core)
+                // 2. DATABASE_URL (fly.io convention)
+                // 3. Database:ConnectionString (legacy/custom)
+                var connectionString = configuration.GetConnectionString("DefaultConnection");
+                if (string.IsNullOrWhiteSpace(connectionString))
                 {
-                    options.UseSqlite("Data Source=:memory:");
+                    connectionString = configuration["DATABASE_URL"];
                 }
-                return;
-            }
+                if (string.IsNullOrWhiteSpace(connectionString))
+                {
+                    connectionString = configuration["Database:ConnectionString"];
+                }
+                if (string.IsNullOrWhiteSpace(connectionString))
+                {
+                    throw new InvalidOperationException(
+                        "Database connection string is not configured. "
+                            + "Set ConnectionStrings:DefaultConnection, DATABASE_URL environment variable, or Database:ConnectionString."
+                    );
+                }
 
-            // Production/dev: PostgreSQL
-            // Check multiple sources for connection string:
-            // 1. ConnectionStrings:DefaultConnection (standard ASP.NET Core)
-            // 2. DATABASE_URL (fly.io convention)
-            // 3. Database:ConnectionString (legacy/custom)
-            var connectionString = configuration.GetConnectionString("DefaultConnection");
-            if (string.IsNullOrWhiteSpace(connectionString))
-            {
-                connectionString = configuration["DATABASE_URL"];
-            }
-            if (string.IsNullOrWhiteSpace(connectionString))
-            {
-                connectionString = configuration["Database:ConnectionString"];
-            }
-            if (string.IsNullOrWhiteSpace(connectionString))
-            {
-                throw new InvalidOperationException(
-                    "Database connection string is not configured. " +
-                    "Set ConnectionStrings:DefaultConnection, DATABASE_URL environment variable, or Database:ConnectionString.");
-            }
+                // Convert DATABASE_URL format (postgres://user:pass@host:port/db) to Npgsql format if needed
+                if (connectionString.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase))
+                {
+                    connectionString = ConvertDatabaseUrlToConnectionString(connectionString);
+                }
 
-            // Convert DATABASE_URL format (postgres://user:pass@host:port/db) to Npgsql format if needed
-            if (connectionString.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase))
-            {
-                connectionString = ConvertDatabaseUrlToConnectionString(connectionString);
+                options.UseNpgsql(connectionString);
             }
-
-            options.UseNpgsql(connectionString);
-        });
+        );
 
         services.AddScoped<IMatchSubmissionService, MatchSubmissionService>();
         services.AddScoped<IStandingsService, StandingsService>();
@@ -84,7 +90,7 @@ public static class ServiceCollectionExtensions
         // Parse postgres://user:password@host:port/database?params
         var uri = new Uri(databaseUrl);
         var userInfo = uri.UserInfo.Split(':');
-        
+
         var host = uri.Host;
         var port = uri.Port > 0 ? uri.Port : 5432;
         var database = uri.AbsolutePath.TrimStart('/');
@@ -103,7 +109,7 @@ public static class ServiceCollectionExtensions
                     "disable" => "Disable",
                     "require" => "Require",
                     "prefer" => "Prefer",
-                    _ => "Require"
+                    _ => "Require",
                 };
             }
         }

@@ -11,6 +11,5 @@ public sealed record TournamentSummaryResponse(
     int ParticipantCount,
     DateTimeOffset CreatedAt,
     DateTimeOffset? StartedAt,
-    DateTimeOffset? EndsAt);
-
-
+    DateTimeOffset? EndsAt
+);

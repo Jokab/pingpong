@@ -7,6 +7,5 @@ public sealed record TournamentStandingResponse(
     int Wins,
     int Losses,
     int Points,
-    double Rating);
-
-
+    double Rating
+);

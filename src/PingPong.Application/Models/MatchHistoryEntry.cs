@@ -10,6 +10,7 @@ public sealed record MatchHistoryEntry(
     Guid? WinnerPlayerId,
     string? WinnerName,
     string? SubmittedBy,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt
+);
 
 public sealed record SetPair(int PlayerOneScore, int PlayerTwoScore);

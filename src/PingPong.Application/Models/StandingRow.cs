@@ -7,4 +7,5 @@ public sealed record StandingRow(
     int Wins,
     int Losses,
     double WinPercentage,
-    double CurrentRating);
+    double CurrentRating
+);

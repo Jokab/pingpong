@@ -22,8 +22,8 @@ public sealed class Tournament
 
     public DateTimeOffset? CompletedAt { get; set; }
 
-    public ICollection<TournamentParticipant> Participants { get; set; } = new List<TournamentParticipant>();
+    public ICollection<TournamentParticipant> Participants { get; set; } =
+        new List<TournamentParticipant>();
 
     public ICollection<TournamentFixture> Fixtures { get; set; } = new List<TournamentFixture>();
 }
-

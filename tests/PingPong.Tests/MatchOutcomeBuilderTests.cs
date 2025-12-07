@@ -23,8 +23,8 @@ public sealed class MatchOutcomeBuilderTests
             [
                 MatchEventSetEntity.CreateScored(matchId, 1, new MatchSetScore(11, 7)),
                 MatchEventSetEntity.CreateScored(matchId, 2, new MatchSetScore(6, 11)),
-                MatchEventSetEntity.CreateScored(matchId, 3, new MatchSetScore(11, 9))
-            ]
+                MatchEventSetEntity.CreateScored(matchId, 3, new MatchSetScore(11, 9)),
+            ],
         };
 
         var outcome = ev.ToOutcome();
@@ -53,8 +53,8 @@ public sealed class MatchOutcomeBuilderTests
             [
                 MatchEventSetEntity.CreateOutcomeOnly(matchId, 1, true),
                 MatchEventSetEntity.CreateOutcomeOnly(matchId, 2, false),
-                MatchEventSetEntity.CreateOutcomeOnly(matchId, 3, true)
-            ]
+                MatchEventSetEntity.CreateOutcomeOnly(matchId, 3, true),
+            ],
         };
 
         var outcome = ev.ToOutcome();
@@ -74,7 +74,7 @@ public sealed class MatchOutcomeBuilderTests
             PlayerTwoId = Guid.NewGuid(),
             MatchDate = DateOnly.FromDateTime(DateTime.Today),
             CreatedAt = DateTimeOffset.UtcNow,
-            PlayerOneWon = false
+            PlayerOneWon = false,
         };
 
         var outcome = ev.ToOutcome();
@@ -85,4 +85,3 @@ public sealed class MatchOutcomeBuilderTests
         Assert.False(set.PlayerOneWon);
     }
 }
-

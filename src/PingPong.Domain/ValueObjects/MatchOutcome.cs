@@ -13,7 +13,8 @@ public sealed record MatchOutcome(
     bool PlayerOneWon,
     IReadOnlyList<MatchSetResult> Sets,
     string? SubmittedBy,
-    DateTimeOffset CreatedAt)
+    DateTimeOffset CreatedAt
+)
 {
     public Guid WinnerId => PlayerOneWon ? PlayerOneId : PlayerTwoId;
 
@@ -25,7 +26,8 @@ public sealed record MatchOutcome(
         bool? playerOneWon,
         IReadOnlyList<MatchSetResult> sets,
         string? submittedBy,
-        DateTimeOffset createdAt)
+        DateTimeOffset createdAt
+    )
     {
         ArgumentNullException.ThrowIfNull(sets);
 
@@ -44,7 +46,8 @@ public sealed record MatchOutcome(
             derivedWinner,
             sets,
             string.IsNullOrWhiteSpace(submittedBy) ? null : submittedBy,
-            createdAt);
+            createdAt
+        );
     }
 
     private static bool DeriveMatchWinner(IReadOnlyList<MatchSetResult> sets)
@@ -60,4 +63,3 @@ public sealed record MatchOutcome(
         return p1Sets > p2Sets;
     }
 }
-

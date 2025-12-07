@@ -14,6 +14,5 @@ public sealed record HeadToHeadDetails(
     double AveragePointDifferential,
     DateOnly? LastMatchDate,
     Guid? LastMatchWinnerId,
-    IReadOnlyList<MatchHistoryEntry> RecentMatches);
-
-
+    IReadOnlyList<MatchHistoryEntry> RecentMatches
+);

@@ -21,12 +21,7 @@ public sealed class TournamentFeatureTests : IClassFixture<IntegrationTestWebApp
         var client = _factory.CreateClient();
         var summary = await CreateTournamentAsync(client);
 
-        var players = new[]
-        {
-            UniquePlayerName("A"),
-            UniquePlayerName("B"),
-            UniquePlayerName("C")
-        };
+        var players = new[] { UniquePlayerName("A"), UniquePlayerName("B"), UniquePlayerName("C") };
 
         foreach (var player in players)
         {
@@ -41,8 +36,8 @@ public sealed class TournamentFeatureTests : IClassFixture<IntegrationTestWebApp
         Assert.Equal(TournamentStatus.Active, summaryDetails!.StatusValue);
         Assert.Equal(3, details.Fixtures.Count);
 
-        var uniquePairs = details.Fixtures
-            .Select(f => NormalizePair(f.PlayerOneName, f.PlayerTwoName))
+        var uniquePairs = details
+            .Fixtures.Select(f => NormalizePair(f.PlayerOneName, f.PlayerTwoName))
             .ToHashSet();
 
         Assert.Equal(3, uniquePairs.Count);
@@ -60,7 +55,8 @@ public sealed class TournamentFeatureTests : IClassFixture<IntegrationTestWebApp
 
         var response = await client.PostAsJsonAsync(
             $"/api/tournaments/{summary.Id}/join",
-            new TournamentParticipantDto(UniquePlayerName("Late")));
+            new TournamentParticipantDto(UniquePlayerName("Late"))
+        );
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -85,13 +81,10 @@ public sealed class TournamentFeatureTests : IClassFixture<IntegrationTestWebApp
             fixture.PlayerOneName,
             fixture.PlayerTwoName,
             DateOnly.FromDateTime(DateTime.UtcNow.Date),
-            new List<SetScoreDto>
-            {
-                new(11, 7),
-                new(11, 5)
-            },
+            new List<SetScoreDto> { new(11, 7), new(11, 5) },
             "turnering-test",
-            fixture.Id);
+            fixture.Id
+        );
 
         var submissionResponse = await client.PostAsJsonAsync("/matches", submission);
         var submissionBody = await submissionResponse.Content.ReadAsStringAsync();
@@ -119,9 +112,7 @@ public sealed class TournamentFeatureTests : IClassFixture<IntegrationTestWebApp
 
     private static string NormalizePair(string a, string b)
     {
-        return string.Compare(a, b, StringComparison.Ordinal) <= 0
-            ? $"{a}|{b}"
-            : $"{b}|{a}";
+        return string.Compare(a, b, StringComparison.Ordinal) <= 0 ? $"{a}|{b}" : $"{b}|{a}";
     }
 
     private static string UniqueTournamentName() => $"Turnering-{Guid.NewGuid():N}";
@@ -135,11 +126,16 @@ public sealed class TournamentFeatureTests : IClassFixture<IntegrationTestWebApp
         return (await response.Content.ReadFromJsonAsync<TournamentSummaryResponse>())!;
     }
 
-    private static async Task JoinTournamentAsync(HttpClient client, Guid tournamentId, string playerName)
+    private static async Task JoinTournamentAsync(
+        HttpClient client,
+        Guid tournamentId,
+        string playerName
+    )
     {
         var response = await client.PostAsJsonAsync(
             $"/api/tournaments/{tournamentId}/join",
-            new TournamentParticipantDto(playerName));
+            new TournamentParticipantDto(playerName)
+        );
 
         var body = await response.Content.ReadAsStringAsync();
         Assert.True(response.IsSuccessStatusCode, body);
@@ -148,12 +144,18 @@ public sealed class TournamentFeatureTests : IClassFixture<IntegrationTestWebApp
     private static async Task StartTournamentAsync(HttpClient client, Guid tournamentId)
     {
         using var content = new StringContent(string.Empty);
-        var response = await client.PostAsync($"/api/admin/tournaments/{tournamentId}/start", content);
+        var response = await client.PostAsync(
+            $"/api/admin/tournaments/{tournamentId}/start",
+            content
+        );
         var body = await response.Content.ReadAsStringAsync();
         Assert.True(response.IsSuccessStatusCode, body);
     }
 
-    private static async Task<TournamentDetailsResponse> GetTournamentDetailsAsync(HttpClient client, Guid tournamentId)
+    private static async Task<TournamentDetailsResponse> GetTournamentDetailsAsync(
+        HttpClient client,
+        Guid tournamentId
+    )
     {
         var response = await client.GetAsync($"/api/tournaments/{tournamentId}");
         var body = await response.Content.ReadAsStringAsync();
@@ -161,5 +163,3 @@ public sealed class TournamentFeatureTests : IClassFixture<IntegrationTestWebApp
         return (await response.Content.ReadFromJsonAsync<TournamentDetailsResponse>())!;
     }
 }
-
-

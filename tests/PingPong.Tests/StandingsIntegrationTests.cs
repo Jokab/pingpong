@@ -1,8 +1,8 @@
 using System.Net.Http.Json;
-using PingPong.Api.Contracts;
-using PingPong.Tests.Support;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using PingPong.Api.Contracts;
+using PingPong.Tests.Support;
 
 namespace PingPong.Tests;
 
@@ -22,17 +22,15 @@ public sealed class StandingsIntegrationTests : IClassFixture<IntegrationTestWeb
         var client = _factory.CreateClient();
         var matchDate = DateOnly.FromDateTime(DateTime.UtcNow.Date);
 
-        var request = (MatchSubmissionDto)new ScoredMatchSubmissionDto(
-            "Alice",
-            "Bob",
-            matchDate,
-            new List<SetScoreDto>
-            {
-                new(11, 8),
-                new(11, 9)
-            },
-            "standings-integration",
-            TournamentFixtureId: null);
+        var request = (MatchSubmissionDto)
+            new ScoredMatchSubmissionDto(
+                "Alice",
+                "Bob",
+                matchDate,
+                new List<SetScoreDto> { new(11, 8), new(11, 9) },
+                "standings-integration",
+                TournamentFixtureId: null
+            );
 
         // Act: submit a match
         var response = await client.PostAsJsonAsync("/matches", request);
@@ -43,10 +41,10 @@ public sealed class StandingsIntegrationTests : IClassFixture<IntegrationTestWeb
         standingsResponse.EnsureSuccessStatusCode();
 
         var json = await standingsResponse.Content.ReadAsStringAsync();
-        var payload = JsonSerializer.Deserialize<StandingsPayload>(json, new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        });
+        var payload = JsonSerializer.Deserialize<StandingsPayload>(
+            json,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+        );
 
         Assert.NotNull(payload);
         Assert.Contains(payload.Items, r => r.PlayerName == "Alice" && r.MatchesPlayed == 1);
@@ -61,12 +59,25 @@ public sealed class StandingsIntegrationTests : IClassFixture<IntegrationTestWeb
 
     private sealed class StandingRowDto
     {
-        [JsonPropertyName("playerId")] public Guid PlayerId { get; set; }
-        [JsonPropertyName("playerName")] public string PlayerName { get; set; } = string.Empty;
-        [JsonPropertyName("matchesPlayed")] public int MatchesPlayed { get; set; }
-        [JsonPropertyName("wins")] public int Wins { get; set; }
-        [JsonPropertyName("losses")] public int Losses { get; set; }
-        [JsonPropertyName("winPercentage")] public double WinPercentage { get; set; }
-        [JsonPropertyName("currentRating")] public double CurrentRating { get; set; }
+        [JsonPropertyName("playerId")]
+        public Guid PlayerId { get; set; }
+
+        [JsonPropertyName("playerName")]
+        public string PlayerName { get; set; } = string.Empty;
+
+        [JsonPropertyName("matchesPlayed")]
+        public int MatchesPlayed { get; set; }
+
+        [JsonPropertyName("wins")]
+        public int Wins { get; set; }
+
+        [JsonPropertyName("losses")]
+        public int Losses { get; set; }
+
+        [JsonPropertyName("winPercentage")]
+        public double WinPercentage { get; set; }
+
+        [JsonPropertyName("currentRating")]
+        public double CurrentRating { get; set; }
     }
 }

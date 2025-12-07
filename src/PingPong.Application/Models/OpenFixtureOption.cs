@@ -7,5 +7,5 @@ public sealed record OpenFixtureOption(
     Guid PlayerOneId,
     Guid PlayerTwoId,
     Guid OpponentId,
-    string OpponentName);
-
+    string OpponentName
+);

@@ -16,7 +16,8 @@ public sealed class DevDataSeeder
         PingPongDbContext dbContext,
         IPlayerDirectory playerDirectory,
         IMatchSubmissionService matchSubmissionService,
-        ITournamentCommandService tournamentCommandService)
+        ITournamentCommandService tournamentCommandService
+    )
     {
         _dbContext = dbContext;
         _playerDirectory = playerDirectory;
@@ -24,7 +25,11 @@ public sealed class DevDataSeeder
         _tournamentCommandService = tournamentCommandService;
     }
 
-    public async Task SeedAsync(int? seedValue = null, bool reseed = false, CancellationToken cancellationToken = default)
+    public async Task SeedAsync(
+        int? seedValue = null,
+        bool reseed = false,
+        CancellationToken cancellationToken = default
+    )
     {
         if (reseed)
         {
@@ -37,8 +42,21 @@ public sealed class DevDataSeeder
         // About 15 Swedish first names
         var swedishFirstNames = new[]
         {
-            "Erik","Johan","Lars","Anders","Per","Nils","Karl","Mikael","Magnus","Björn",
-            "Oskar","Henrik","Fredrik","Patrik","Jens"
+            "Erik",
+            "Johan",
+            "Lars",
+            "Anders",
+            "Per",
+            "Nils",
+            "Karl",
+            "Mikael",
+            "Magnus",
+            "Björn",
+            "Oskar",
+            "Henrik",
+            "Fredrik",
+            "Patrik",
+            "Jens",
         };
 
         // Ensure players exist
@@ -76,7 +94,11 @@ public sealed class DevDataSeeder
 
             // Randomly choose number of matches for the day (0-3, skewed towards 1-2)
             var matchCountRoll = rng.NextDouble();
-            var matchesToday = matchCountRoll < 0.15 ? 0 : matchCountRoll < 0.70 ? 1 : matchCountRoll < 0.95 ? 2 : 3;
+            var matchesToday =
+                matchCountRoll < 0.15 ? 0
+                : matchCountRoll < 0.70 ? 1
+                : matchCountRoll < 0.95 ? 2
+                : 3;
 
             if (matchesToday == 0)
             {
@@ -101,12 +123,16 @@ public sealed class DevDataSeeder
                 if (rng.NextDouble() < 0.6)
                 {
                     var (a, b) = rivalPairs[rng.Next(rivalPairs.Count)];
-                    idxA = a; idxB = b;
+                    idxA = a;
+                    idxB = b;
                 }
                 else
                 {
                     idxA = rng.Next(playerIds.Count);
-                    do { idxB = rng.Next(playerIds.Count); } while (idxB == idxA);
+                    do
+                    {
+                        idxB = rng.Next(playerIds.Count);
+                    } while (idxB == idxA);
                 }
 
                 var p1 = playerIds[idxA];
@@ -134,7 +160,8 @@ public sealed class DevDataSeeder
                     Array.Empty<SetWinner>(),
                     null,
                     "dev-seeder",
-                    TournamentFixtureId: null);
+                    TournamentFixtureId: null
+                );
 
                 await _matchSubmissionService.SubmitMatchAsync(request, cancellationToken);
 
@@ -159,7 +186,11 @@ public sealed class DevDataSeeder
         await _dbContext.Players.ExecuteDeleteAsync(cancellationToken);
     }
 
-    private async Task SeedSampleTournamentAsync(IReadOnlyList<PlayerSeedInfo> players, Random rng, CancellationToken cancellationToken)
+    private async Task SeedSampleTournamentAsync(
+        IReadOnlyList<PlayerSeedInfo> players,
+        Random rng,
+        CancellationToken cancellationToken
+    )
     {
         if (players.Count < 4)
         {
@@ -170,19 +201,27 @@ public sealed class DevDataSeeder
         var createRequest = new CreateTournamentRequest(
             "Demoturnering",
             "Skapas automatiskt vid utvecklingsseedning.",
-            21);
+            21
+        );
 
-        var summary = await _tournamentCommandService.CreateTournamentAsync(createRequest, cancellationToken);
+        var summary = await _tournamentCommandService.CreateTournamentAsync(
+            createRequest,
+            cancellationToken
+        );
 
         foreach (var player in selected)
         {
-            await _tournamentCommandService.JoinTournamentAsync(summary.Id, player.Name, cancellationToken);
+            await _tournamentCommandService.JoinTournamentAsync(
+                summary.Id,
+                player.Name,
+                cancellationToken
+            );
         }
 
         await _tournamentCommandService.StartTournamentAsync(summary.Id, cancellationToken);
 
-        var fixtures = await _dbContext.TournamentFixtures
-            .AsNoTracking()
+        var fixtures = await _dbContext
+            .TournamentFixtures.AsNoTracking()
             .Where(f => f.TournamentId == summary.Id)
             .OrderBy(f => f.Sequence)
             .Take(3)
@@ -211,13 +250,17 @@ public sealed class DevDataSeeder
                 Array.Empty<SetWinner>(),
                 null,
                 "dev-turnering",
-                fixture.Id);
+                fixture.Id
+            );
 
             await _matchSubmissionService.SubmitMatchAsync(request, cancellationToken);
         }
     }
 
-    private static IReadOnlyList<SetScore> GenerateBestOfThreeSets(Random rng, bool? forcePlayerOneWin = null)
+    private static IReadOnlyList<SetScore> GenerateBestOfThreeSets(
+        Random rng,
+        bool? forcePlayerOneWin = null
+    )
     {
         // Decide if the match goes to 2 or 3 sets. 65% ends 2-0, 35% ends 2-1
         var threeSets = rng.NextDouble() < 0.35;
@@ -285,9 +328,12 @@ public sealed class DevDataSeeder
             {
                 var loser = r.Next(3, 10); // 3..9 creates natural-looking scores
                 var winner = Math.Max(11, loser + 2);
-                if (winner == loser) winner += 2;
-                if (winner - loser < 2) winner = loser + 2;
-                if (winner < 11) winner = 11;
+                if (winner == loser)
+                    winner += 2;
+                if (winner - loser < 2)
+                    winner = loser + 2;
+                if (winner < 11)
+                    winner = 11;
                 return (winner, loser);
             }
         }
@@ -295,14 +341,9 @@ public sealed class DevDataSeeder
         void AddSet(int setNumber, bool p1Wins)
         {
             var (w, l) = GenerateSet(rng);
-            sets.Add(
-                p1Wins
-                    ? new SetScore(setNumber, w, l)
-                    : new SetScore(setNumber, l, w));
+            sets.Add(p1Wins ? new SetScore(setNumber, w, l) : new SetScore(setNumber, l, w));
         }
     }
 
     private sealed record PlayerSeedInfo(Guid Id, string Name);
 }
-
-

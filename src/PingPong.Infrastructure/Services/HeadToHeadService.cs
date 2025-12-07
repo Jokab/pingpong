@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using PingPong.Application.Interfaces;
 using PingPong.Application.Models;
-using PingPong.Infrastructure.Persistence;
 using PingPong.Domain.ValueObjects;
+using PingPong.Infrastructure.Persistence;
 
 namespace PingPong.Infrastructure.Services;
 
@@ -15,12 +15,15 @@ public sealed class HeadToHeadService : IHeadToHeadService
         _context = context;
     }
 
-    public async Task<IReadOnlyList<HeadToHeadRow>> GetHeadToHeadAsync(Guid playerId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<HeadToHeadRow>> GetHeadToHeadAsync(
+        Guid playerId,
+        CancellationToken cancellationToken = default
+    )
     {
         // Load all events that involve the player, including players and sets
         // Note: We filter in the database but order in memory to support SQLite (DateTimeOffset ordering)
-        var events = await _context.MatchEvents
-            .AsNoTracking()
+        var events = await _context
+            .MatchEvents.AsNoTracking()
             .Include(e => e.PlayerOne)
             .Include(e => e.PlayerTwo)
             .Include(e => e.Sets)
@@ -28,7 +31,8 @@ public sealed class HeadToHeadService : IHeadToHeadService
             .ToListAsync(cancellationToken);
 
         var eventLookup = events.ToDictionary(e => e.Id);
-        var outcomes = MatchOutcomeBuilder.BuildEffectiveOutcomes(events)
+        var outcomes = MatchOutcomeBuilder
+            .BuildEffectiveOutcomes(events)
             .Where(o => o.PlayerOneId == playerId || o.PlayerTwoId == playerId)
             .OrderBy(o => o.MatchDate)
             .ThenBy(o => o.CreatedAt)
@@ -73,15 +77,28 @@ public sealed class HeadToHeadService : IHeadToHeadService
             agg.PointDifferentialTotal += ComputePointDifferential(outcome, playerIsP1);
         }
 
-        var rows = perOpponent.Values
-            .Select(a => new HeadToHeadRow(
+        var rows = perOpponent
+            .Values.Select(a => new HeadToHeadRow(
                 a.OpponentId,
                 a.OpponentName,
                 a.MatchesPlayed,
                 a.Wins,
                 a.Losses,
-                a.MatchesPlayed == 0 ? 0d : Math.Round((double)a.Wins / a.MatchesPlayed, 4, MidpointRounding.AwayFromZero),
-                a.MatchesPlayed == 0 ? 0d : Math.Round((double)a.PointDifferentialTotal / a.MatchesPlayed, 2, MidpointRounding.AwayFromZero)))
+                a.MatchesPlayed == 0
+                    ? 0d
+                    : Math.Round(
+                        (double)a.Wins / a.MatchesPlayed,
+                        4,
+                        MidpointRounding.AwayFromZero
+                    ),
+                a.MatchesPlayed == 0
+                    ? 0d
+                    : Math.Round(
+                        (double)a.PointDifferentialTotal / a.MatchesPlayed,
+                        2,
+                        MidpointRounding.AwayFromZero
+                    )
+            ))
             .OrderByDescending(r => r.MatchesPlayed)
             .ThenByDescending(r => r.Wins)
             .ThenBy(r => r.OpponentName, StringComparer.OrdinalIgnoreCase)
@@ -95,18 +112,38 @@ public sealed class HeadToHeadService : IHeadToHeadService
         Guid playerBId,
         DateOnly? from = null,
         DateOnly? to = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         if (playerAId == Guid.Empty || playerBId == Guid.Empty || playerAId == playerBId)
         {
             // Invalid or same player: return empty details with names if available
-            var a = await _context.Players.AsNoTracking().FirstOrDefaultAsync(p => p.Id == playerAId, cancellationToken);
-            var b = await _context.Players.AsNoTracking().FirstOrDefaultAsync(p => p.Id == playerBId, cancellationToken);
-            return new HeadToHeadDetails(playerAId, a?.DisplayName ?? "", playerBId, b?.DisplayName ?? "", 0, 0, 0, 0, 0, 0d, 0d, null, null, Array.Empty<MatchHistoryEntry>());
+            var a = await _context
+                .Players.AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == playerAId, cancellationToken);
+            var b = await _context
+                .Players.AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == playerBId, cancellationToken);
+            return new HeadToHeadDetails(
+                playerAId,
+                a?.DisplayName ?? "",
+                playerBId,
+                b?.DisplayName ?? "",
+                0,
+                0,
+                0,
+                0,
+                0,
+                0d,
+                0d,
+                null,
+                null,
+                Array.Empty<MatchHistoryEntry>()
+            );
         }
 
-        var players = await _context.Players
-            .AsNoTracking()
+        var players = await _context
+            .Players.AsNoTracking()
             .Where(p => p.Id == playerAId || p.Id == playerBId)
             .Select(p => new { p.Id, p.DisplayName })
             .ToListAsync(cancellationToken);
@@ -114,10 +151,13 @@ public sealed class HeadToHeadService : IHeadToHeadService
         var nameA = players.FirstOrDefault(p => p.Id == playerAId)?.DisplayName ?? "";
         var nameB = players.FirstOrDefault(p => p.Id == playerBId)?.DisplayName ?? "";
 
-        var query = _context.MatchEvents
-            .AsNoTracking()
+        var query = _context
+            .MatchEvents.AsNoTracking()
             .Include(e => e.Sets)
-            .Where(e => (e.PlayerOneId == playerAId && e.PlayerTwoId == playerBId) || (e.PlayerOneId == playerBId && e.PlayerTwoId == playerAId));
+            .Where(e =>
+                (e.PlayerOneId == playerAId && e.PlayerTwoId == playerBId)
+                || (e.PlayerOneId == playerBId && e.PlayerTwoId == playerAId)
+            );
 
         if (from.HasValue)
         {
@@ -141,13 +181,31 @@ public sealed class HeadToHeadService : IHeadToHeadService
 
         if (events.Count == 0)
         {
-            return new HeadToHeadDetails(playerAId, nameA, playerBId, nameB, 0, 0, 0, 0, 0, 0d, 0d, null, null, Array.Empty<MatchHistoryEntry>());
+            return new HeadToHeadDetails(
+                playerAId,
+                nameA,
+                playerBId,
+                nameB,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0d,
+                0d,
+                null,
+                null,
+                Array.Empty<MatchHistoryEntry>()
+            );
         }
 
         var eventLookup = events.ToDictionary(e => e.Id);
-        var outcomes = MatchOutcomeBuilder.BuildEffectiveOutcomes(events)
-            .Where(o => (o.PlayerOneId == playerAId && o.PlayerTwoId == playerBId) ||
-                        (o.PlayerOneId == playerBId && o.PlayerTwoId == playerAId))
+        var outcomes = MatchOutcomeBuilder
+            .BuildEffectiveOutcomes(events)
+            .Where(o =>
+                (o.PlayerOneId == playerAId && o.PlayerTwoId == playerBId)
+                || (o.PlayerOneId == playerBId && o.PlayerTwoId == playerAId)
+            )
             .OrderBy(o => o.MatchDate)
             .ThenBy(o => o.CreatedAt)
             .ThenBy(o => o.EventId)
@@ -155,7 +213,22 @@ public sealed class HeadToHeadService : IHeadToHeadService
 
         if (outcomes.Count == 0)
         {
-            return new HeadToHeadDetails(playerAId, nameA, playerBId, nameB, 0, 0, 0, 0, 0, 0d, 0d, null, null, Array.Empty<MatchHistoryEntry>());
+            return new HeadToHeadDetails(
+                playerAId,
+                nameA,
+                playerBId,
+                nameB,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0d,
+                0d,
+                null,
+                null,
+                Array.Empty<MatchHistoryEntry>()
+            );
         }
 
         var ordinalByEvent = BuildOrdinals(outcomes);
@@ -171,7 +244,8 @@ public sealed class HeadToHeadService : IHeadToHeadService
         foreach (var outcome in outcomes)
         {
             matchesPlayed++;
-            var playerAWon = outcome.PlayerOneId == playerAId ? outcome.PlayerOneWon : !outcome.PlayerOneWon;
+            var playerAWon =
+                outcome.PlayerOneId == playerAId ? outcome.PlayerOneWon : !outcome.PlayerOneWon;
             if (playerAWon)
             {
                 wins++;
@@ -196,24 +270,40 @@ public sealed class HeadToHeadService : IHeadToHeadService
             var playerTwoName = ev.PlayerOneId == playerAId ? nameB : nameA;
             var setPairs = BuildSetPairsForPlayer(outcome, playerAId);
             var winnerId = outcome.WinnerId;
-            string? winnerName = winnerId == playerAId ? nameA : winnerId == playerBId ? nameB : null;
+            string? winnerName =
+                winnerId == playerAId ? nameA
+                : winnerId == playerBId ? nameB
+                : null;
 
-            recent.Add(new MatchHistoryEntry(
-                outcome.EventId,
-                outcome.MatchDate,
-                ordinalByEvent[outcome.EventId],
-                playerOneName,
-                playerTwoName,
-                setPairs,
-                winnerId,
-                winnerName,
-                ev.SubmittedBy,
-                outcome.CreatedAt));
+            recent.Add(
+                new MatchHistoryEntry(
+                    outcome.EventId,
+                    outcome.MatchDate,
+                    ordinalByEvent[outcome.EventId],
+                    playerOneName,
+                    playerTwoName,
+                    setPairs,
+                    winnerId,
+                    winnerName,
+                    ev.SubmittedBy,
+                    outcome.CreatedAt
+                )
+            );
         }
 
         var lastOutcome = outcomes.Last();
-        var winPct = matchesPlayed == 0 ? 0d : Math.Round((double)wins / matchesPlayed, 4, MidpointRounding.AwayFromZero);
-        var avgPointDiff = matchesPlayed == 0 ? 0d : Math.Round((double)pointDiffTotal / matchesPlayed, 2, MidpointRounding.AwayFromZero);
+        var winPct =
+            matchesPlayed == 0
+                ? 0d
+                : Math.Round((double)wins / matchesPlayed, 4, MidpointRounding.AwayFromZero);
+        var avgPointDiff =
+            matchesPlayed == 0
+                ? 0d
+                : Math.Round(
+                    (double)pointDiffTotal / matchesPlayed,
+                    2,
+                    MidpointRounding.AwayFromZero
+                );
         var recent5 = recent
             .OrderBy(r => r.MatchDate)
             .ThenBy(r => r.CreatedAt)
@@ -235,15 +325,14 @@ public sealed class HeadToHeadService : IHeadToHeadService
             avgPointDiff,
             lastOutcome.MatchDate,
             lastOutcome.WinnerId,
-            recent5);
+            recent5
+        );
     }
 
     private static Dictionary<Guid, int> BuildOrdinals(IReadOnlyList<MatchOutcome> outcomes)
     {
         var map = new Dictionary<Guid, int>();
-        var grouped = outcomes
-            .GroupBy(o => o.MatchDate)
-            .OrderBy(g => g.Key);
+        var grouped = outcomes.GroupBy(o => o.MatchDate).OrderBy(g => g.Key);
 
         foreach (var group in grouped)
         {
@@ -257,7 +346,10 @@ public sealed class HeadToHeadService : IHeadToHeadService
         return map;
     }
 
-    private static (int setsWon, int setsLost) CountSetsForPlayer(MatchOutcome outcome, Guid playerId)
+    private static (int setsWon, int setsLost) CountSetsForPlayer(
+        MatchOutcome outcome,
+        Guid playerId
+    )
     {
         var playerIsP1 = outcome.PlayerOneId == playerId;
         var setsWon = outcome.Sets.Count(s => playerIsP1 ? s.PlayerOneWon : !s.PlayerOneWon);
@@ -281,7 +373,10 @@ public sealed class HeadToHeadService : IHeadToHeadService
         return diff;
     }
 
-    private static IReadOnlyList<SetPair> BuildSetPairsForPlayer(MatchOutcome outcome, Guid playerId)
+    private static IReadOnlyList<SetPair> BuildSetPairsForPlayer(
+        MatchOutcome outcome,
+        Guid playerId
+    )
     {
         var playerIsP1 = outcome.PlayerOneId == playerId;
         var pairs = new List<SetPair>(outcome.Sets.Count);
@@ -290,8 +385,12 @@ public sealed class HeadToHeadService : IHeadToHeadService
         {
             if (set is ScoredMatchSetResult scored)
             {
-                var p1Score = playerIsP1 ? scored.Score.PlayerOneScore : scored.Score.PlayerTwoScore;
-                var p2Score = playerIsP1 ? scored.Score.PlayerTwoScore : scored.Score.PlayerOneScore;
+                var p1Score = playerIsP1
+                    ? scored.Score.PlayerOneScore
+                    : scored.Score.PlayerTwoScore;
+                var p2Score = playerIsP1
+                    ? scored.Score.PlayerTwoScore
+                    : scored.Score.PlayerOneScore;
                 pairs.Add(new SetPair(p1Score, p2Score));
             }
             else
@@ -320,5 +419,3 @@ public sealed class HeadToHeadService : IHeadToHeadService
         public int PointDifferentialTotal { get; set; }
     }
 }
-
-

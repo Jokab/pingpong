@@ -1,5 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <ItemGroup>
     <ProjectReference Include="..\PingPong.Domain\PingPong.Domain.csproj" />
     <ProjectReference Include="..\PingPong.Application\PingPong.Application.csproj" />
@@ -20,5 +19,4 @@
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
-
 </Project>

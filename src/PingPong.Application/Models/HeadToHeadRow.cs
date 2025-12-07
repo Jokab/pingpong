@@ -7,4 +7,5 @@ public sealed record HeadToHeadRow(
     int Wins,
     int Losses,
     double WinPercentage,
-    double AveragePointDifferential);
+    double AveragePointDifferential
+);

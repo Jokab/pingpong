@@ -8,5 +8,3 @@ public sealed class TournamentDetailsResponse
 
     public List<TournamentFixtureResponse> Fixtures { get; init; } = [];
 }
-
-

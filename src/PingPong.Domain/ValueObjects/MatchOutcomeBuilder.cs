@@ -16,7 +16,7 @@ public static class MatchOutcomeBuilder
             bool? matchWinner = matchEvent switch
             {
                 OutcomeOnlyMatchEvent outcomeOnly => outcomeOnly.PlayerOneWon,
-                _ => null
+                _ => null,
             };
 
             return MatchOutcome.Create(
@@ -27,8 +27,10 @@ public static class MatchOutcomeBuilder
                 matchWinner,
                 sets,
                 matchEvent.SubmittedBy,
-                matchEvent.CreatedAt);
+                matchEvent.CreatedAt
+            );
         }
+
         public bool TryToOutcome(out MatchOutcome? outcome)
         {
             try
@@ -61,9 +63,17 @@ public static class MatchOutcomeBuilder
 
         var results = new List<MatchOutcome>();
 
-        var grouped = list
-            .GroupBy(e => new { e.MatchDate, Pair = NormalizePair(e.PlayerOneId, e.PlayerTwoId) })
-            .Select(g => new { g.Key.MatchDate, g.Key.Pair, Items = g.OrderBy(i => i.CreatedAt).ThenBy(i => i.Id).ToList() })
+        var grouped = list.GroupBy(e => new
+            {
+                e.MatchDate,
+                Pair = NormalizePair(e.PlayerOneId, e.PlayerTwoId),
+            })
+            .Select(g => new
+            {
+                g.Key.MatchDate,
+                g.Key.Pair,
+                Items = g.OrderBy(i => i.CreatedAt).ThenBy(i => i.Id).ToList(),
+            })
             .OrderBy(g => g.MatchDate)
             .ThenBy(g => g.Pair, StringComparer.Ordinal)
             .ToList();
@@ -78,7 +88,9 @@ public static class MatchOutcomeBuilder
 
             foreach (var ordinal in effectiveByOrdinal.Keys.OrderBy(o => o))
             {
-                if (effectiveByOrdinal[ordinal].TryToOutcome(out var outcome) && outcome is not null)
+                if (
+                    effectiveByOrdinal[ordinal].TryToOutcome(out var outcome) && outcome is not null
+                )
                 {
                     results.Add(outcome);
                 }
@@ -87,7 +99,8 @@ public static class MatchOutcomeBuilder
 
         return results;
 
-        static string NormalizePair(Guid a, Guid b) => a.CompareTo(b) < 0 ? $"{a:N}-{b:N}" : $"{b:N}-{a:N}";
+        static string NormalizePair(Guid a, Guid b) =>
+            a.CompareTo(b) < 0 ? $"{a:N}-{b:N}" : $"{b:N}-{a:N}";
     }
 
     private static IReadOnlyList<MatchSetResult> BuildSets(MatchEvent matchEvent)
@@ -96,16 +109,13 @@ public static class MatchOutcomeBuilder
         {
             if (matchEvent.Sets.Count != 0)
             {
-                return matchEvent.Sets
-                    .OrderBy(s => s.SetNumber)
+                return matchEvent
+                    .Sets.OrderBy(s => s.SetNumber)
                     .Select(s => s.ToSetResult())
                     .ToList();
             }
 
-            return
-            [
-                new OutcomeOnlyMatchSetResult(1, outcomeOnly.PlayerOneWon)
-            ];
+            return [new OutcomeOnlyMatchSetResult(1, outcomeOnly.PlayerOneWon)];
         }
 
         if (matchEvent.Sets.Count == 0)
@@ -113,10 +123,6 @@ public static class MatchOutcomeBuilder
             throw new DomainValidationException("Scored match event must have at least one set.");
         }
 
-        return matchEvent.Sets
-            .OrderBy(s => s.SetNumber)
-            .Select(s => s.ToSetResult())
-            .ToList();
+        return matchEvent.Sets.OrderBy(s => s.SetNumber).Select(s => s.ToSetResult()).ToList();
     }
 }
-

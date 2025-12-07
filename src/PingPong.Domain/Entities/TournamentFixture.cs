@@ -32,4 +32,3 @@ public sealed class TournamentFixture
 
     public int Sequence { get; set; }
 }
-

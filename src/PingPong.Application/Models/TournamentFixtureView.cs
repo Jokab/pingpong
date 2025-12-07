@@ -13,5 +13,5 @@ public sealed record TournamentFixtureView(
     Guid? WinnerPlayerId,
     Guid? MatchEventId,
     int RoundNumber,
-    int Sequence);
-
+    int Sequence
+);

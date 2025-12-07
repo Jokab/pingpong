@@ -22,4 +22,3 @@ public sealed class TournamentParticipant
 
     public int Points { get; set; }
 }
-

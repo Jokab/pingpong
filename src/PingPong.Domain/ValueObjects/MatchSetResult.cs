@@ -22,13 +22,14 @@ public abstract record MatchSetResult
     public abstract bool PlayerOneWon { get; }
 }
 
-public sealed record ScoredMatchSetResult(int SetNumber, MatchSetScore Score) : MatchSetResult(SetNumber)
+public sealed record ScoredMatchSetResult(int SetNumber, MatchSetScore Score)
+    : MatchSetResult(SetNumber)
 {
     public override bool PlayerOneWon => Score.PlayerOneScore > Score.PlayerTwoScore;
 }
 
-public sealed record OutcomeOnlyMatchSetResult(int SetNumber, bool PlayerOneWonResult) : MatchSetResult(SetNumber)
+public sealed record OutcomeOnlyMatchSetResult(int SetNumber, bool PlayerOneWonResult)
+    : MatchSetResult(SetNumber)
 {
     public override bool PlayerOneWon => PlayerOneWonResult;
 }
-

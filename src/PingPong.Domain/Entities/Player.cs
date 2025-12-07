@@ -24,7 +24,7 @@ public sealed class Player
             Id = Guid.NewGuid(),
             DisplayName = cleanedDisplayName,
             NormalizedName = normalizedName,
-            CreatedAt = createdAt
+            CreatedAt = createdAt,
         };
     }
 
@@ -35,7 +35,10 @@ public sealed class Player
         var trimmed = displayName.Trim();
         if (trimmed.Length == 0)
         {
-            throw new ArgumentException("Player display name cannot be empty.", nameof(displayName));
+            throw new ArgumentException(
+                "Player display name cannot be empty.",
+                nameof(displayName)
+            );
         }
 
         return trimmed;
@@ -48,7 +51,10 @@ public sealed class Player
         var trimmed = displayName.Trim();
         if (trimmed.Length == 0)
         {
-            throw new ArgumentException("Player display name cannot be empty.", nameof(displayName));
+            throw new ArgumentException(
+                "Player display name cannot be empty.",
+                nameof(displayName)
+            );
         }
 
         return trimmed.ToUpperInvariant();

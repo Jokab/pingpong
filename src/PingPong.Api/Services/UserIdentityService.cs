@@ -45,7 +45,10 @@ public sealed class UserIdentityService
     {
         try
         {
-            var value = await _jsRuntime.InvokeAsync<string?>("storageHelper.getItem", TutorialSeenKey);
+            var value = await _jsRuntime.InvokeAsync<string?>(
+                "storageHelper.getItem",
+                TutorialSeenKey
+            );
             return value == "true";
         }
         catch
@@ -56,7 +59,10 @@ public sealed class UserIdentityService
 
     public async Task SetTutorialSeenAsync(bool seen = true)
     {
-        await _jsRuntime.InvokeVoidAsync("storageHelper.setItem", TutorialSeenKey, seen ? "true" : "false");
+        await _jsRuntime.InvokeVoidAsync(
+            "storageHelper.setItem",
+            TutorialSeenKey,
+            seen ? "true" : "false"
+        );
     }
 }
-

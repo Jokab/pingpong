@@ -10,22 +10,18 @@ public sealed class MatchEventSetConfiguration : IEntityTypeConfiguration<MatchE
     {
         builder.HasKey(s => s.Id);
 
-        builder.Property(s => s.SetNumber)
-            .IsRequired();
+        builder.Property(s => s.SetNumber).IsRequired();
 
-        builder.Property(s => s.PlayerOneScore)
-            .IsRequired(false);
+        builder.Property(s => s.PlayerOneScore).IsRequired(false);
 
-        builder.Property(s => s.PlayerTwoScore)
-            .IsRequired(false);
+        builder.Property(s => s.PlayerTwoScore).IsRequired(false);
 
-        builder.Property(s => s.PlayerOneWon)
-            .IsRequired(false);
+        builder.Property(s => s.PlayerOneWon).IsRequired(false);
 
-        builder.HasIndex(s => new { s.MatchEventId, s.SetNumber })
-            .IsUnique();
+        builder.HasIndex(s => new { s.MatchEventId, s.SetNumber }).IsUnique();
 
-        builder.HasOne(s => s.MatchEvent)
+        builder
+            .HasOne(s => s.MatchEvent)
             .WithMany(e => e.Sets)
             .HasForeignKey(s => s.MatchEventId)
             .IsRequired()

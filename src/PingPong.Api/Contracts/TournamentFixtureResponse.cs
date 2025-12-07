@@ -13,7 +13,8 @@ public sealed record TournamentFixtureResponse(
     Guid? WinnerPlayerId,
     Guid? MatchEventId,
     int RoundNumber,
-    int Sequence)
+    int Sequence
+)
 {
     public string GetWinnerName()
     {
@@ -25,5 +26,3 @@ public sealed record TournamentFixtureResponse(
         return WinnerPlayerId == PlayerOneId ? PlayerOneName : PlayerTwoName;
     }
 }
-
-

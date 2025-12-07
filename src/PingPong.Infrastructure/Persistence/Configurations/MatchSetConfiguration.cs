@@ -10,10 +10,8 @@ public sealed class MatchSetConfiguration : IEntityTypeConfiguration<MatchSet>
     {
         builder.HasKey(s => s.Id);
 
-        builder.Property(s => s.SetNumber)
-            .IsRequired();
+        builder.Property(s => s.SetNumber).IsRequired();
 
-        builder.HasIndex(s => new { s.MatchId, s.SetNumber })
-            .IsUnique();
+        builder.HasIndex(s => new { s.MatchId, s.SetNumber }).IsUnique();
     }
 }

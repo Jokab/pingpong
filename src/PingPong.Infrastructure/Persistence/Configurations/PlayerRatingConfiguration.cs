@@ -10,10 +10,8 @@ public sealed class PlayerRatingConfiguration : IEntityTypeConfiguration<PlayerR
     {
         builder.HasKey(r => r.PlayerId);
 
-        builder.Property(r => r.CurrentRating)
-            .HasPrecision(8, 2);
+        builder.Property(r => r.CurrentRating).HasPrecision(8, 2);
 
-        builder.Property(r => r.LastUpdatedAt)
-            .HasPrecision(3);
+        builder.Property(r => r.LastUpdatedAt).HasPrecision(3);
     }
 }

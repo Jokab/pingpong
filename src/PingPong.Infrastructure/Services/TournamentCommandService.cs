@@ -17,7 +17,10 @@ public sealed class TournamentCommandService : ITournamentCommandService
         _playerDirectory = playerDirectory;
     }
 
-    public async Task<TournamentSummary> CreateTournamentAsync(CreateTournamentRequest request, CancellationToken cancellationToken = default)
+    public async Task<TournamentSummary> CreateTournamentAsync(
+        CreateTournamentRequest request,
+        CancellationToken cancellationToken = default
+    )
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -33,11 +36,13 @@ public sealed class TournamentCommandService : ITournamentCommandService
         {
             Id = Guid.NewGuid(),
             Name = request.Name.Trim(),
-            Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description!.Trim(),
+            Description = string.IsNullOrWhiteSpace(request.Description)
+                ? null
+                : request.Description!.Trim(),
             DurationDays = durationDays,
             PointsPerWin = request.PointsPerWin <= 0 ? 1 : request.PointsPerWin,
             Status = TournamentStatus.Draft,
-            CreatedAt = now
+            CreatedAt = now,
         };
 
         await _context.Tournaments.AddAsync(tournament, cancellationToken);
@@ -48,16 +53,22 @@ public sealed class TournamentCommandService : ITournamentCommandService
         catch (DbUpdateConcurrencyException ex)
         {
             var entityNames = string.Join(", ", ex.Entries.Select(e => e.Metadata.Name));
-            throw new InvalidOperationException($"Concurrency conflict when saving tournament join for entities: {entityNames}", ex);
+            throw new InvalidOperationException(
+                $"Concurrency conflict when saving tournament join for entities: {entityNames}",
+                ex
+            );
         }
 
         return ToSummary(tournament, 0);
     }
 
-    public async Task<TournamentSummary> StartTournamentAsync(Guid tournamentId, CancellationToken cancellationToken = default)
+    public async Task<TournamentSummary> StartTournamentAsync(
+        Guid tournamentId,
+        CancellationToken cancellationToken = default
+    )
     {
-        var tournament = await _context.Tournaments
-            .Include(t => t.Participants)
+        var tournament = await _context
+            .Tournaments.Include(t => t.Participants)
                 .ThenInclude(p => p.Player)
             .Include(t => t.Fixtures)
             .FirstOrDefaultAsync(t => t.Id == tournamentId, cancellationToken);
@@ -81,7 +92,10 @@ public sealed class TournamentCommandService : ITournamentCommandService
         if (tournament.Fixtures.Count == 0)
         {
             newlyGeneratedFixtures = GenerateFixtures(tournament);
-            await _context.TournamentFixtures.AddRangeAsync(newlyGeneratedFixtures, cancellationToken);
+            await _context.TournamentFixtures.AddRangeAsync(
+                newlyGeneratedFixtures,
+                cancellationToken
+            );
         }
 
         var now = DateTimeOffset.UtcNow;
@@ -96,21 +110,28 @@ public sealed class TournamentCommandService : ITournamentCommandService
         catch (DbUpdateConcurrencyException ex)
         {
             var entityNames = string.Join(", ", ex.Entries.Select(e => e.Metadata.Name));
-            throw new InvalidOperationException($"Concurrency conflict when starting tournament for entities: {entityNames}", ex);
+            throw new InvalidOperationException(
+                $"Concurrency conflict when starting tournament for entities: {entityNames}",
+                ex
+            );
         }
 
         return ToSummary(tournament, tournament.Participants.Count);
     }
 
-    public async Task<TournamentStandingRow> JoinTournamentAsync(Guid tournamentId, string playerName, CancellationToken cancellationToken = default)
+    public async Task<TournamentStandingRow> JoinTournamentAsync(
+        Guid tournamentId,
+        string playerName,
+        CancellationToken cancellationToken = default
+    )
     {
         if (string.IsNullOrWhiteSpace(playerName))
         {
             throw new ArgumentException("Player name is required.", nameof(playerName));
         }
 
-        var tournament = await _context.Tournaments
-            .Include(t => t.Participants)
+        var tournament = await _context
+            .Tournaments.Include(t => t.Participants)
                 .ThenInclude(p => p.Player)
             .FirstOrDefaultAsync(t => t.Id == tournamentId, cancellationToken);
 
@@ -128,7 +149,10 @@ public sealed class TournamentCommandService : ITournamentCommandService
 
         if (tournament.Participants.Any(p => p.PlayerId == player.Id))
         {
-            return ToStandingRow(tournament.Participants.First(p => p.PlayerId == player.Id), player);
+            return ToStandingRow(
+                tournament.Participants.First(p => p.PlayerId == player.Id),
+                player
+            );
         }
 
         var participant = new TournamentParticipant
@@ -138,7 +162,7 @@ public sealed class TournamentCommandService : ITournamentCommandService
             Tournament = tournament,
             PlayerId = player.Id,
             Player = player,
-            JoinedAt = DateTimeOffset.UtcNow
+            JoinedAt = DateTimeOffset.UtcNow,
         };
 
         await _context.TournamentParticipants.AddAsync(participant, cancellationToken);
@@ -150,13 +174,20 @@ public sealed class TournamentCommandService : ITournamentCommandService
         catch (DbUpdateConcurrencyException ex)
         {
             var entityNames = string.Join(", ", ex.Entries.Select(e => e.Metadata.Name));
-            throw new InvalidOperationException($"Concurrency conflict when saving tournament join for entities: {entityNames}", ex);
+            throw new InvalidOperationException(
+                $"Concurrency conflict when saving tournament join for entities: {entityNames}",
+                ex
+            );
         }
 
         return ToStandingRow(participant, player);
     }
 
-    public async Task LeaveTournamentAsync(Guid tournamentId, string playerName, CancellationToken cancellationToken = default)
+    public async Task LeaveTournamentAsync(
+        Guid tournamentId,
+        string playerName,
+        CancellationToken cancellationToken = default
+    )
     {
         if (string.IsNullOrWhiteSpace(playerName))
         {
@@ -165,8 +196,8 @@ public sealed class TournamentCommandService : ITournamentCommandService
 
         var normalized = Player.NormalizeKey(playerName);
 
-        var tournament = await _context.Tournaments
-            .Include(t => t.Participants)
+        var tournament = await _context
+            .Tournaments.Include(t => t.Participants)
                 .ThenInclude(p => p.Player)
             .FirstOrDefaultAsync(t => t.Id == tournamentId, cancellationToken);
 
@@ -177,11 +208,14 @@ public sealed class TournamentCommandService : ITournamentCommandService
 
         if (tournament.Status != TournamentStatus.Draft)
         {
-            throw new InvalidOperationException("Participants can only leave before the tournament starts.");
+            throw new InvalidOperationException(
+                "Participants can only leave before the tournament starts."
+            );
         }
 
-        var participant = tournament.Participants
-            .FirstOrDefault(p => p.Player != null && p.Player.NormalizedName == normalized);
+        var participant = tournament.Participants.FirstOrDefault(p =>
+            p.Player != null && p.Player.NormalizedName == normalized
+        );
 
         if (participant is null)
         {
@@ -192,10 +226,15 @@ public sealed class TournamentCommandService : ITournamentCommandService
         await _context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task RecordFixtureResultAsync(Guid fixtureId, Guid winnerPlayerId, Guid matchEventId, CancellationToken cancellationToken = default)
+    public async Task RecordFixtureResultAsync(
+        Guid fixtureId,
+        Guid winnerPlayerId,
+        Guid matchEventId,
+        CancellationToken cancellationToken = default
+    )
     {
-        var fixture = await _context.TournamentFixtures
-            .Include(f => f.Tournament)
+        var fixture = await _context
+            .TournamentFixtures.Include(f => f.Tournament)
                 .ThenInclude(t => t!.Participants)
             .FirstOrDefaultAsync(f => f.Id == fixtureId, cancellationToken);
 
@@ -219,9 +258,12 @@ public sealed class TournamentCommandService : ITournamentCommandService
             throw new InvalidOperationException("Fixture already linked to a match event.");
         }
 
-        var tournament = fixture.Tournament ?? throw new InvalidOperationException("Tournament missing for fixture.");
+        var tournament =
+            fixture.Tournament
+            ?? throw new InvalidOperationException("Tournament missing for fixture.");
         var winner = tournament.Participants.FirstOrDefault(p => p.PlayerId == winnerPlayerId);
-        var loserId = winnerPlayerId == fixture.PlayerOneId ? fixture.PlayerTwoId : fixture.PlayerOneId;
+        var loserId =
+            winnerPlayerId == fixture.PlayerOneId ? fixture.PlayerTwoId : fixture.PlayerOneId;
         var loser = tournament.Participants.FirstOrDefault(p => p.PlayerId == loserId);
 
         if (winner is null || loser is null)
@@ -243,9 +285,11 @@ public sealed class TournamentCommandService : ITournamentCommandService
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        var remaining = await _context.TournamentFixtures
-            .AsNoTracking()
-            .Where(f => f.TournamentId == tournament.Id && f.Status == TournamentFixtureStatus.Pending)
+        var remaining = await _context
+            .TournamentFixtures.AsNoTracking()
+            .Where(f =>
+                f.TournamentId == tournament.Id && f.Status == TournamentFixtureStatus.Pending
+            )
             .AnyAsync(cancellationToken);
 
         if (!remaining)
@@ -273,10 +317,14 @@ public sealed class TournamentCommandService : ITournamentCommandService
             participantCount,
             tournament.CreatedAt,
             tournament.StartedAt,
-            tournament.EndsAt);
+            tournament.EndsAt
+        );
     }
 
-    private static TournamentStandingRow ToStandingRow(TournamentParticipant participant, Player player)
+    private static TournamentStandingRow ToStandingRow(
+        TournamentParticipant participant,
+        Player player
+    )
     {
         var rating = player.Rating?.CurrentRating ?? 0d;
         return new TournamentStandingRow(
@@ -286,13 +334,17 @@ public sealed class TournamentCommandService : ITournamentCommandService
             participant.Wins,
             participant.Losses,
             participant.Points,
-            rating);
+            rating
+        );
     }
 
     private static List<TournamentFixture> GenerateFixtures(Tournament tournament)
     {
-        var orderedParticipants = tournament.Participants
-            .OrderBy(p => p.Player?.DisplayName ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+        var orderedParticipants = tournament
+            .Participants.OrderBy(
+                p => p.Player?.DisplayName ?? string.Empty,
+                StringComparer.OrdinalIgnoreCase
+            )
             .ToList();
 
         var fixtures = new List<TournamentFixture>();
@@ -305,17 +357,19 @@ public sealed class TournamentCommandService : ITournamentCommandService
                 var first = orderedParticipants[i];
                 var second = orderedParticipants[j];
 
-                fixtures.Add(new TournamentFixture
-                {
-                    Id = Guid.NewGuid(),
-                    TournamentId = tournament.Id,
-                    PlayerOneId = first.PlayerId,
-                    PlayerTwoId = second.PlayerId,
-                    Status = TournamentFixtureStatus.Pending,
-                    CreatedAt = DateTimeOffset.UtcNow,
-                    RoundNumber = sequence,
-                    Sequence = sequence
-                });
+                fixtures.Add(
+                    new TournamentFixture
+                    {
+                        Id = Guid.NewGuid(),
+                        TournamentId = tournament.Id,
+                        PlayerOneId = first.PlayerId,
+                        PlayerTwoId = second.PlayerId,
+                        Status = TournamentFixtureStatus.Pending,
+                        CreatedAt = DateTimeOffset.UtcNow,
+                        RoundNumber = sequence,
+                        Sequence = sequence,
+                    }
+                );
 
                 sequence++;
             }
@@ -324,4 +378,3 @@ public sealed class TournamentCommandService : ITournamentCommandService
         return fixtures;
     }
 }
-

@@ -24,33 +24,33 @@ public sealed class MatchSubmissionTests : IClassFixture<IntegrationTestWebAppli
         var client = _factory.CreateClient();
         var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
 
-        var request = (MatchSubmissionDto)new ScoredMatchSubmissionDto(
-            "Alice",
-            "Bob",
-            today,
-            new List<SetScoreDto>
-            {
-                new(11, 8),
-                new(7, 11),
-                new(11, 9)
-            },
-            "integration-test",
-            TournamentFixtureId: null);
+        var request = (MatchSubmissionDto)
+            new ScoredMatchSubmissionDto(
+                "Alice",
+                "Bob",
+                today,
+                new List<SetScoreDto> { new(11, 8), new(7, 11), new(11, 9) },
+                "integration-test",
+                TournamentFixtureId: null
+            );
 
         // Act
         var response = await client.PostAsJsonAsync("/matches", request);
         var rawBody = await response.Content.ReadAsStringAsync();
 
         // Assert
-        Assert.True(response.IsSuccessStatusCode, $"Status {(int)response.StatusCode} {response.StatusCode}: {rawBody}");
+        Assert.True(
+            response.IsSuccessStatusCode,
+            $"Status {(int)response.StatusCode} {response.StatusCode}: {rawBody}"
+        );
 
         var payload = await response.Content.ReadFromJsonAsync<MatchSubmissionResponse>();
         Assert.NotNull(payload);
 
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<PingPongDbContext>();
-        var evt = await dbContext.MatchEvents
-            .Include(e => e.Sets)
+        var evt = await dbContext
+            .MatchEvents.Include(e => e.Sets)
             .SingleAsync(e => e.Id == payload.EventId);
 
         Assert.Equal(today, evt.MatchDate);
@@ -68,34 +68,39 @@ public sealed class MatchSubmissionTests : IClassFixture<IntegrationTestWebAppli
         var client = _factory.CreateClient();
         var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
 
-        var request = (MatchSubmissionDto)new OutcomeOnlyMatchSubmissionDto(
-            "Charlie",
-            "Diana",
-            today,
-            PlayerOneWon: true,
-            Sets: null,
-            "outcome-test",
-            TournamentFixtureId: null);
+        var request = (MatchSubmissionDto)
+            new OutcomeOnlyMatchSubmissionDto(
+                "Charlie",
+                "Diana",
+                today,
+                PlayerOneWon: true,
+                Sets: null,
+                "outcome-test",
+                TournamentFixtureId: null
+            );
 
         // Act
         var response = await client.PostAsJsonAsync("/matches", request);
         var rawBody = await response.Content.ReadAsStringAsync();
 
         // Assert
-        Assert.True(response.IsSuccessStatusCode, $"Status {(int)response.StatusCode} {response.StatusCode}: {rawBody}");
+        Assert.True(
+            response.IsSuccessStatusCode,
+            $"Status {(int)response.StatusCode} {response.StatusCode}: {rawBody}"
+        );
 
         var payload = await response.Content.ReadFromJsonAsync<MatchSubmissionResponse>();
         Assert.NotNull(payload);
 
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<PingPongDbContext>();
-        var evt = await dbContext.MatchEvents
-            .Include(e => e.Sets)
+        var evt = await dbContext
+            .MatchEvents.Include(e => e.Sets)
             .SingleAsync(e => e.Id == payload.EventId);
 
         Assert.Equal(today, evt.MatchDate);
         Assert.Equal("outcome-test", evt.SubmittedBy);
-        
+
         // Verify it's an OutcomeOnlyMatchEvent
         Assert.IsType<OutcomeOnlyMatchEvent>(evt);
         var outcomeEvent = (OutcomeOnlyMatchEvent)evt;
@@ -105,7 +110,7 @@ public sealed class MatchSubmissionTests : IClassFixture<IntegrationTestWebAppli
         var players = await dbContext.Players.ToListAsync();
         Assert.Contains(players, p => p.DisplayName == "Charlie");
         Assert.Contains(players, p => p.DisplayName == "Diana");
-        
+
         // Verify the players are linked correctly
         Assert.Equal(evt.PlayerOneId, players.Single(p => p.DisplayName == "Charlie").Id);
         Assert.Equal(evt.PlayerTwoId, players.Single(p => p.DisplayName == "Diana").Id);
@@ -118,40 +123,43 @@ public sealed class MatchSubmissionTests : IClassFixture<IntegrationTestWebAppli
         var client = _factory.CreateClient();
         var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
 
-        var request = (MatchSubmissionDto)new OutcomeOnlyMatchSubmissionDto(
-            "Eva",
-            "Frank",
-            today,
-            PlayerOneWon: true,
-            Sets: new List<SetWinnerDto>
-            {
-                new(1, true),
-                new(2, false),
-                new(3, true)
-            },
-            SubmittedBy: "outcome-sets",
-            TournamentFixtureId: null);
+        var request = (MatchSubmissionDto)
+            new OutcomeOnlyMatchSubmissionDto(
+                "Eva",
+                "Frank",
+                today,
+                PlayerOneWon: true,
+                Sets: new List<SetWinnerDto> { new(1, true), new(2, false), new(3, true) },
+                SubmittedBy: "outcome-sets",
+                TournamentFixtureId: null
+            );
 
         // Act
         var response = await client.PostAsJsonAsync("/matches", request);
         var rawBody = await response.Content.ReadAsStringAsync();
 
         // Assert
-        Assert.True(response.IsSuccessStatusCode, $"Status {(int)response.StatusCode} {response.StatusCode}: {rawBody}");
+        Assert.True(
+            response.IsSuccessStatusCode,
+            $"Status {(int)response.StatusCode} {response.StatusCode}: {rawBody}"
+        );
 
         var payload = await response.Content.ReadFromJsonAsync<MatchSubmissionResponse>();
         Assert.NotNull(payload);
 
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<PingPongDbContext>();
-        var evt = await dbContext.MatchEvents
-            .Include(e => e.Sets)
+        var evt = await dbContext
+            .MatchEvents.Include(e => e.Sets)
             .SingleAsync(e => e.Id == payload.EventId);
 
         var outcomeEvent = Assert.IsType<OutcomeOnlyMatchEvent>(evt);
         Assert.Equal(3, evt.Sets.Count);
         Assert.True(outcomeEvent.PlayerOneWon);
         Assert.All(evt.Sets, set => Assert.Null(set.PlayerOneScore));
-        Assert.Equal([true, false, true], evt.Sets.OrderBy(s => s.SetNumber).Select(s => s.PlayerOneWon!.Value));
+        Assert.Equal(
+            [true, false, true],
+            evt.Sets.OrderBy(s => s.SetNumber).Select(s => s.PlayerOneWon!.Value)
+        );
     }
 }

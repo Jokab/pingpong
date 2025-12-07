@@ -2,8 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PingPong.Application.Interfaces;
 using PingPong.Domain.Entities;
-using PingPong.Infrastructure.Persistence;
 using PingPong.Domain.ValueObjects;
+using PingPong.Infrastructure.Persistence;
 
 namespace PingPong.Infrastructure.Services;
 
@@ -18,11 +18,25 @@ public sealed class EloRatingService : IRatingService
         _context = context;
         var baseRatingStr = configuration["Ratings:BaseRating"];
         var kFactorStr = configuration["Ratings:KFactor"];
-        if (!double.TryParse(baseRatingStr, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out _baseRating))
+        if (
+            !double.TryParse(
+                baseRatingStr,
+                System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out _baseRating
+            )
+        )
         {
             _baseRating = 1000d;
         }
-        if (!double.TryParse(kFactorStr, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out _kFactor))
+        if (
+            !double.TryParse(
+                kFactorStr,
+                System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out _kFactor
+            )
+        )
         {
             _kFactor = 32d;
         }
@@ -31,19 +45,20 @@ public sealed class EloRatingService : IRatingService
     public async Task RebuildAllRatingsAsync(CancellationToken cancellationToken = default)
     {
         // Load all players and initialize in-memory ratings
-        var players = await _context.Players
-            .AsNoTracking()
+        var players = await _context
+            .Players.AsNoTracking()
             .Select(p => new { p.Id })
             .ToListAsync(cancellationToken);
 
         var ratingByPlayerId = players.ToDictionary(p => p.Id, _ => _baseRating);
 
         // Load events needed to build effective match outcomes
-        var events = await _context.MatchEvents
-            .AsNoTracking()
+        var events = await _context
+            .MatchEvents.AsNoTracking()
             .Include(e => e.Sets)
             .ToListAsync(cancellationToken);
-        var outcomes = MatchOutcomeBuilder.BuildEffectiveOutcomes(events)
+        var outcomes = MatchOutcomeBuilder
+            .BuildEffectiveOutcomes(events)
             .OrderBy(o => o.MatchDate)
             .ThenBy(o => o.CreatedAt)
             .ThenBy(o => o.EventId)
@@ -93,7 +108,11 @@ public sealed class EloRatingService : IRatingService
         return (raPrime, rbPrime);
     }
 
-    private async Task UpsertRatingsAsync(Dictionary<Guid, double> ratingByPlayerId, DateTimeOffset lastUpdatedAt, CancellationToken cancellationToken)
+    private async Task UpsertRatingsAsync(
+        Dictionary<Guid, double> ratingByPlayerId,
+        DateTimeOffset lastUpdatedAt,
+        CancellationToken cancellationToken
+    )
     {
         // Load existing ratings WITH tracking so EF can manage updates
         var existing = await _context.PlayerRatings.ToListAsync(cancellationToken);
@@ -108,12 +127,14 @@ public sealed class EloRatingService : IRatingService
             }
             else
             {
-                _context.PlayerRatings.Add(new PlayerRating
-                {
-                    PlayerId = kvp.Key,
-                    CurrentRating = kvp.Value,
-                    LastUpdatedAt = lastUpdatedAt
-                });
+                _context.PlayerRatings.Add(
+                    new PlayerRating
+                    {
+                        PlayerId = kvp.Key,
+                        CurrentRating = kvp.Value,
+                        LastUpdatedAt = lastUpdatedAt,
+                    }
+                );
             }
         }
 
@@ -127,5 +148,3 @@ public sealed class EloRatingService : IRatingService
         await _context.SaveChangesAsync(cancellationToken);
     }
 }
-
-

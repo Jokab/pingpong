@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using PingPong.Application.Interfaces;
 using PingPong.Application.Models;
-using PingPong.Infrastructure.Persistence;
 using PingPong.Domain.ValueObjects;
+using PingPong.Infrastructure.Persistence;
 
 namespace PingPong.Infrastructure.Services;
 
@@ -15,14 +15,17 @@ public sealed class StandingsService : IStandingsService
         _context = context;
     }
 
-    public async Task<IReadOnlyList<StandingRow>> GetStandingsAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<StandingRow>> GetStandingsAsync(
+        CancellationToken cancellationToken = default
+    )
     {
-        var players = await _context.Players
-            .AsNoTracking()
+        var players = await _context
+            .Players.AsNoTracking()
             .Select(player => new PlayerProjection(
                 player.Id,
                 player.DisplayName,
-                player.Rating != null ? player.Rating.CurrentRating : 0d))
+                player.Rating != null ? player.Rating.CurrentRating : 0d
+            ))
             .ToListAsync(cancellationToken);
 
         if (players.Count == 0)
@@ -30,14 +33,12 @@ public sealed class StandingsService : IStandingsService
             return Array.Empty<StandingRow>();
         }
 
-        var playerStats = players.ToDictionary(
-            player => player.Id,
-            _ => new MutablePlayerStats());
+        var playerStats = players.ToDictionary(player => player.Id, _ => new MutablePlayerStats());
 
         // Build effective matches from event log with last-write-wins per (date + normalized pair + ordinal)
         // SQLite doesn't support DateTimeOffset in ORDER BY, so order in memory
-        var events = await _context.MatchEvents
-            .AsNoTracking()
+        var events = await _context
+            .MatchEvents.AsNoTracking()
             .Include(e => e.Sets)
             .ToListAsync(cancellationToken);
 
@@ -75,9 +76,14 @@ public sealed class StandingsService : IStandingsService
             {
                 var stats = playerStats[player.Id];
                 var matchesPlayed = stats.MatchesPlayed;
-                var winPercentage = matchesPlayed == 0
-                    ? 0d
-                    : Math.Round((double)stats.Wins / matchesPlayed, 4, MidpointRounding.AwayFromZero);
+                var winPercentage =
+                    matchesPlayed == 0
+                        ? 0d
+                        : Math.Round(
+                            (double)stats.Wins / matchesPlayed,
+                            4,
+                            MidpointRounding.AwayFromZero
+                        );
 
                 return new StandingRow(
                     player.Id,
@@ -86,7 +92,8 @@ public sealed class StandingsService : IStandingsService
                     stats.Wins,
                     stats.Losses,
                     winPercentage,
-                    player.Rating);
+                    player.Rating
+                );
             })
             .OrderByDescending(row => row.WinPercentage)
             .ThenByDescending(row => row.Wins)

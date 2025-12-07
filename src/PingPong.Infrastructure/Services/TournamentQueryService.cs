@@ -15,10 +15,12 @@ public sealed class TournamentQueryService : ITournamentQueryService
         _context = context;
     }
 
-    public async Task<IReadOnlyList<TournamentSummary>> GetTournamentsAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<TournamentSummary>> GetTournamentsAsync(
+        CancellationToken cancellationToken = default
+    )
     {
-        return await _context.Tournaments
-            .AsNoTracking()
+        return await _context
+            .Tournaments.AsNoTracking()
             .OrderByDescending(t => t.StartedAt ?? t.CreatedAt)
             .Select(t => new TournamentSummary(
                 t.Id,
@@ -29,14 +31,18 @@ public sealed class TournamentQueryService : ITournamentQueryService
                 t.Participants.Count,
                 t.CreatedAt,
                 t.StartedAt,
-                t.EndsAt))
+                t.EndsAt
+            ))
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<TournamentDetails?> GetTournamentAsync(Guid tournamentId, CancellationToken cancellationToken = default)
+    public async Task<TournamentDetails?> GetTournamentAsync(
+        Guid tournamentId,
+        CancellationToken cancellationToken = default
+    )
     {
-        var summary = await _context.Tournaments
-            .AsNoTracking()
+        var summary = await _context
+            .Tournaments.AsNoTracking()
             .Where(t => t.Id == tournamentId)
             .Select(t => new TournamentSummary(
                 t.Id,
@@ -47,7 +53,8 @@ public sealed class TournamentQueryService : ITournamentQueryService
                 t.Participants.Count,
                 t.CreatedAt,
                 t.StartedAt,
-                t.EndsAt))
+                t.EndsAt
+            ))
             .FirstOrDefaultAsync(cancellationToken);
 
         if (summary is null)
@@ -55,8 +62,8 @@ public sealed class TournamentQueryService : ITournamentQueryService
             return null;
         }
 
-        var standings = await _context.TournamentParticipants
-            .AsNoTracking()
+        var standings = await _context
+            .TournamentParticipants.AsNoTracking()
             .Where(p => p.TournamentId == tournamentId)
             .Select(p => new TournamentStandingRow(
                 p.PlayerId,
@@ -65,7 +72,8 @@ public sealed class TournamentQueryService : ITournamentQueryService
                 p.Wins,
                 p.Losses,
                 p.Points,
-                p.Player.Rating != null ? p.Player.Rating.CurrentRating : 0d))
+                p.Player.Rating != null ? p.Player.Rating.CurrentRating : 0d
+            ))
             .ToListAsync(cancellationToken);
 
         standings = standings
@@ -81,10 +89,13 @@ public sealed class TournamentQueryService : ITournamentQueryService
         return new TournamentDetails(summary, standings, fixtures);
     }
 
-    public async Task<IReadOnlyList<TournamentFixtureView>> GetFixturesAsync(Guid tournamentId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<TournamentFixtureView>> GetFixturesAsync(
+        Guid tournamentId,
+        CancellationToken cancellationToken = default
+    )
     {
-        return await _context.TournamentFixtures
-            .AsNoTracking()
+        return await _context
+            .TournamentFixtures.AsNoTracking()
             .Where(f => f.TournamentId == tournamentId)
             .OrderBy(f => f.Sequence)
             .Select(f => new TournamentFixtureView(
@@ -98,11 +109,16 @@ public sealed class TournamentQueryService : ITournamentQueryService
                 f.WinnerPlayerId,
                 f.MatchEventId,
                 f.RoundNumber,
-                f.Sequence))
+                f.Sequence
+            ))
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<OpenFixtureOption>> GetOpenFixturesAsync(string playerOneName, string playerTwoName, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<OpenFixtureOption>> GetOpenFixturesAsync(
+        string playerOneName,
+        string playerTwoName,
+        CancellationToken cancellationToken = default
+    )
     {
         if (string.IsNullOrWhiteSpace(playerOneName) || string.IsNullOrWhiteSpace(playerTwoName))
         {
@@ -112,10 +128,15 @@ public sealed class TournamentQueryService : ITournamentQueryService
         var normalizedOne = Player.NormalizeKey(playerOneName);
         var normalizedTwo = Player.NormalizeKey(playerTwoName);
 
-        var players = await _context.Players
-            .AsNoTracking()
+        var players = await _context
+            .Players.AsNoTracking()
             .Where(p => p.NormalizedName == normalizedOne || p.NormalizedName == normalizedTwo)
-            .Select(p => new { p.Id, p.DisplayName, p.NormalizedName })
+            .Select(p => new
+            {
+                p.Id,
+                p.DisplayName,
+                p.NormalizedName,
+            })
             .ToListAsync(cancellationToken);
 
         var p1 = players.FirstOrDefault(p => p.NormalizedName == normalizedOne);
@@ -126,12 +147,15 @@ public sealed class TournamentQueryService : ITournamentQueryService
             return Array.Empty<OpenFixtureOption>();
         }
 
-        var fixtures = await _context.TournamentFixtures
-            .AsNoTracking()
+        var fixtures = await _context
+            .TournamentFixtures.AsNoTracking()
             .Where(f =>
-                f.Status == TournamentFixtureStatus.Pending &&
-                ((f.PlayerOneId == p1.Id && f.PlayerTwoId == p2.Id) ||
-                 (f.PlayerOneId == p2.Id && f.PlayerTwoId == p1.Id)))
+                f.Status == TournamentFixtureStatus.Pending
+                && (
+                    (f.PlayerOneId == p1.Id && f.PlayerTwoId == p2.Id)
+                    || (f.PlayerOneId == p2.Id && f.PlayerTwoId == p1.Id)
+                )
+            )
             .Select(f => new
             {
                 f.Id,
@@ -140,7 +164,7 @@ public sealed class TournamentQueryService : ITournamentQueryService
                 f.PlayerOneId,
                 PlayerOneName = f.PlayerOne!.DisplayName,
                 f.PlayerTwoId,
-                PlayerTwoName = f.PlayerTwo!.DisplayName
+                PlayerTwoName = f.PlayerTwo!.DisplayName,
             })
             .OrderBy(x => x.TournamentName)
             .ToListAsync(cancellationToken);
@@ -158,9 +182,9 @@ public sealed class TournamentQueryService : ITournamentQueryService
                     x.PlayerOneId,
                     x.PlayerTwoId,
                     opponentId,
-                    opponentName);
+                    opponentName
+                );
             })
             .ToList();
     }
 }
-

@@ -16,14 +16,27 @@ namespace PingPong.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    DisplayName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    NormalizedName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamptz", precision: 3, nullable: false)
+                    DisplayName = table.Column<string>(
+                        type: "TEXT",
+                        maxLength: 200,
+                        nullable: false
+                    ),
+                    NormalizedName = table.Column<string>(
+                        type: "TEXT",
+                        maxLength: 200,
+                        nullable: false
+                    ),
+                    CreatedAt = table.Column<DateTimeOffset>(
+                        type: "timestamptz",
+                        precision: 3,
+                        nullable: false
+                    ),
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Players", x => x.Id);
-                });
+                }
+            );
 
             migrationBuilder.CreateTable(
                 name: "PlayerAliases",
@@ -32,8 +45,17 @@ namespace PingPong.Infrastructure.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     PlayerId = table.Column<Guid>(type: "uuid", nullable: false),
                     AliasName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
-                    ConfidenceScore = table.Column<double>(type: "REAL", precision: 5, scale: 4, nullable: false),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamptz", precision: 3, nullable: false)
+                    ConfidenceScore = table.Column<double>(
+                        type: "REAL",
+                        precision: 5,
+                        scale: 4,
+                        nullable: false
+                    ),
+                    CreatedAt = table.Column<DateTimeOffset>(
+                        type: "timestamptz",
+                        precision: 3,
+                        nullable: false
+                    ),
                 },
                 constraints: table =>
                 {
@@ -43,16 +65,27 @@ namespace PingPong.Infrastructure.Migrations
                         column: x => x.PlayerId,
                         principalTable: "Players",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
+                        onDelete: ReferentialAction.Cascade
+                    );
+                }
+            );
 
             migrationBuilder.CreateTable(
                 name: "PlayerRatings",
                 columns: table => new
                 {
                     PlayerId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CurrentRating = table.Column<double>(type: "REAL", precision: 8, scale: 2, nullable: false),
-                    LastUpdatedAt = table.Column<DateTimeOffset>(type: "timestamptz", precision: 3, nullable: false)
+                    CurrentRating = table.Column<double>(
+                        type: "REAL",
+                        precision: 8,
+                        scale: 2,
+                        nullable: false
+                    ),
+                    LastUpdatedAt = table.Column<DateTimeOffset>(
+                        type: "timestamptz",
+                        precision: 3,
+                        nullable: false
+                    ),
                 },
                 constraints: table =>
                 {
@@ -62,8 +95,10 @@ namespace PingPong.Infrastructure.Migrations
                         column: x => x.PlayerId,
                         principalTable: "Players",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
+                        onDelete: ReferentialAction.Cascade
+                    );
+                }
+            );
 
             migrationBuilder.CreateTable(
                 name: "Matches",
@@ -76,10 +111,18 @@ namespace PingPong.Infrastructure.Migrations
                     Status = table.Column<int>(type: "INTEGER", nullable: false),
                     PrimaryEventId = table.Column<Guid>(type: "uuid", nullable: true),
                     LatestEventId = table.Column<Guid>(type: "uuid", nullable: true),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamptz", precision: 3, nullable: false),
-                    UpdatedAt = table.Column<DateTimeOffset>(type: "timestamptz", precision: 3, nullable: false),
+                    CreatedAt = table.Column<DateTimeOffset>(
+                        type: "timestamptz",
+                        precision: 3,
+                        nullable: false
+                    ),
+                    UpdatedAt = table.Column<DateTimeOffset>(
+                        type: "timestamptz",
+                        precision: 3,
+                        nullable: false
+                    ),
                     PlayerOneSetsWon = table.Column<int>(type: "INTEGER", nullable: false),
-                    PlayerTwoSetsWon = table.Column<int>(type: "INTEGER", nullable: false)
+                    PlayerTwoSetsWon = table.Column<int>(type: "INTEGER", nullable: false),
                 },
                 constraints: table =>
                 {
@@ -89,14 +132,17 @@ namespace PingPong.Infrastructure.Migrations
                         column: x => x.PlayerOneId,
                         principalTable: "Players",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Restrict
+                    );
                     table.ForeignKey(
                         name: "FK_Matches_Players_PlayerTwoId",
                         column: x => x.PlayerTwoId,
                         principalTable: "Players",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                });
+                        onDelete: ReferentialAction.Restrict
+                    );
+                }
+            );
 
             migrationBuilder.CreateTable(
                 name: "MatchEvents",
@@ -109,8 +155,12 @@ namespace PingPong.Infrastructure.Migrations
                     PlayerOneId = table.Column<Guid>(type: "uuid", nullable: false),
                     PlayerTwoId = table.Column<Guid>(type: "uuid", nullable: false),
                     MatchDate = table.Column<DateTime>(type: "date", nullable: false),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamptz", precision: 3, nullable: false),
-                    SubmittedBy = table.Column<string>(type: "TEXT", nullable: true)
+                    CreatedAt = table.Column<DateTimeOffset>(
+                        type: "timestamptz",
+                        precision: 3,
+                        nullable: false
+                    ),
+                    SubmittedBy = table.Column<string>(type: "TEXT", nullable: true),
                 },
                 constraints: table =>
                 {
@@ -120,25 +170,30 @@ namespace PingPong.Infrastructure.Migrations
                         column: x => x.SupersedesEventId,
                         principalTable: "MatchEvents",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Restrict
+                    );
                     table.ForeignKey(
                         name: "FK_MatchEvents_Matches_MatchId",
                         column: x => x.MatchId,
                         principalTable: "Matches",
-                        principalColumn: "Id");
+                        principalColumn: "Id"
+                    );
                     table.ForeignKey(
                         name: "FK_MatchEvents_Players_PlayerOneId",
                         column: x => x.PlayerOneId,
                         principalTable: "Players",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Restrict
+                    );
                     table.ForeignKey(
                         name: "FK_MatchEvents_Players_PlayerTwoId",
                         column: x => x.PlayerTwoId,
                         principalTable: "Players",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                });
+                        onDelete: ReferentialAction.Restrict
+                    );
+                }
+            );
 
             migrationBuilder.CreateTable(
                 name: "MatchSets",
@@ -148,7 +203,7 @@ namespace PingPong.Infrastructure.Migrations
                     MatchId = table.Column<Guid>(type: "uuid", nullable: false),
                     SetNumber = table.Column<int>(type: "INTEGER", nullable: false),
                     PlayerOneScore = table.Column<int>(type: "INTEGER", nullable: false),
-                    PlayerTwoScore = table.Column<int>(type: "INTEGER", nullable: false)
+                    PlayerTwoScore = table.Column<int>(type: "INTEGER", nullable: false),
                 },
                 constraints: table =>
                 {
@@ -158,8 +213,10 @@ namespace PingPong.Infrastructure.Migrations
                         column: x => x.MatchId,
                         principalTable: "Matches",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
+                        onDelete: ReferentialAction.Cascade
+                    );
+                }
+            );
 
             migrationBuilder.CreateTable(
                 name: "MatchEventSets",
@@ -169,7 +226,7 @@ namespace PingPong.Infrastructure.Migrations
                     MatchEventId = table.Column<Guid>(type: "uuid", nullable: false),
                     SetNumber = table.Column<int>(type: "INTEGER", nullable: false),
                     PlayerOneScore = table.Column<int>(type: "INTEGER", nullable: false),
-                    PlayerTwoScore = table.Column<int>(type: "INTEGER", nullable: false)
+                    PlayerTwoScore = table.Column<int>(type: "INTEGER", nullable: false),
                 },
                 constraints: table =>
                 {
@@ -179,68 +236,81 @@ namespace PingPong.Infrastructure.Migrations
                         column: x => x.MatchEventId,
                         principalTable: "MatchEvents",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
+                        onDelete: ReferentialAction.Cascade
+                    );
+                }
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_Matches_PlayerOneId",
                 table: "Matches",
-                column: "PlayerOneId");
+                column: "PlayerOneId"
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_Matches_PlayerTwoId",
                 table: "Matches",
-                column: "PlayerTwoId");
+                column: "PlayerTwoId"
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_Matches_PrimaryEventId",
                 table: "Matches",
                 column: "PrimaryEventId",
-                unique: true);
+                unique: true
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_MatchEvents_MatchId",
                 table: "MatchEvents",
-                column: "MatchId");
+                column: "MatchId"
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_MatchEvents_PlayerOneId",
                 table: "MatchEvents",
-                column: "PlayerOneId");
+                column: "PlayerOneId"
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_MatchEvents_PlayerTwoId",
                 table: "MatchEvents",
-                column: "PlayerTwoId");
+                column: "PlayerTwoId"
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_MatchEvents_SupersedesEventId",
                 table: "MatchEvents",
-                column: "SupersedesEventId");
+                column: "SupersedesEventId"
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_MatchEventSets_MatchEventId_SetNumber",
                 table: "MatchEventSets",
                 columns: new[] { "MatchEventId", "SetNumber" },
-                unique: true);
+                unique: true
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_MatchSets_MatchId_SetNumber",
                 table: "MatchSets",
                 columns: new[] { "MatchId", "SetNumber" },
-                unique: true);
+                unique: true
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_PlayerAliases_PlayerId_AliasName",
                 table: "PlayerAliases",
                 columns: new[] { "PlayerId", "AliasName" },
-                unique: true);
+                unique: true
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_Players_NormalizedName",
                 table: "Players",
                 column: "NormalizedName",
-                unique: true);
+                unique: true
+            );
 
             migrationBuilder.AddForeignKey(
                 name: "FK_Matches_MatchEvents_PrimaryEventId",
@@ -248,7 +318,8 @@ namespace PingPong.Infrastructure.Migrations
                 column: "PrimaryEventId",
                 principalTable: "MatchEvents",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.Restrict);
+                onDelete: ReferentialAction.Restrict
+            );
         }
 
         /// <inheritdoc />
@@ -256,28 +327,22 @@ namespace PingPong.Infrastructure.Migrations
         {
             migrationBuilder.DropForeignKey(
                 name: "FK_Matches_MatchEvents_PrimaryEventId",
-                table: "Matches");
+                table: "Matches"
+            );
 
-            migrationBuilder.DropTable(
-                name: "MatchEventSets");
+            migrationBuilder.DropTable(name: "MatchEventSets");
 
-            migrationBuilder.DropTable(
-                name: "MatchSets");
+            migrationBuilder.DropTable(name: "MatchSets");
 
-            migrationBuilder.DropTable(
-                name: "PlayerAliases");
+            migrationBuilder.DropTable(name: "PlayerAliases");
 
-            migrationBuilder.DropTable(
-                name: "PlayerRatings");
+            migrationBuilder.DropTable(name: "PlayerRatings");
 
-            migrationBuilder.DropTable(
-                name: "MatchEvents");
+            migrationBuilder.DropTable(name: "MatchEvents");
 
-            migrationBuilder.DropTable(
-                name: "Matches");
+            migrationBuilder.DropTable(name: "Matches");
 
-            migrationBuilder.DropTable(
-                name: "Players");
+            migrationBuilder.DropTable(name: "Players");
         }
     }
 }
