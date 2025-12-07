@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using PingPong.Domain.Entities;
 using PingPong.Domain.MatchSubmission;
+using PingPong.Domain.Players;
+using PingPong.Domain.Standings;
 using PingPong.Domain.Tournaments;
 
 namespace PingPong.Application.Shared;

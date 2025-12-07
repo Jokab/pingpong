@@ -1,7 +1,8 @@
 using PingPong.Application.Models;
-using PingPong.Domain.Entities;
+using PingPong.Application.Players;
+using PingPong.Domain.Players;
 
-namespace PingPong.Application.Interfaces;
+namespace PingPong.Application.Players;
 
 public interface IPlayerDirectory
 {

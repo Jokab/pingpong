@@ -1,7 +1,7 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using PingPong.Domain.Entities;
 using PingPong.Domain.MatchSubmission;
+using PingPong.Domain.Players;
 using PingPong.Infrastructure.Persistence;
 using PingPong.Infrastructure.Services;
 

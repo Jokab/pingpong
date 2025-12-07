@@ -1,4 +1,4 @@
-namespace PingPong.Application.Interfaces;
+namespace PingPong.Application.Standings;
 
 public interface IRatingService
 {

@@ -1,9 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using PingPong.Application.Interfaces;
 using PingPong.Application.Models;
+using PingPong.Application.Players;
 using PingPong.Application.Shared;
 using PingPong.Application.Tournaments;
-using PingPong.Domain.Entities;
+using PingPong.Domain.Players;
 using PingPong.Domain.Tournaments;
 
 namespace PingPong.Application.Tournaments;

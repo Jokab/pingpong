@@ -1,4 +1,4 @@
-namespace PingPong.Application.Models;
+namespace PingPong.Application.Standings;
 
 public sealed record StandingRow(
     Guid PlayerId,

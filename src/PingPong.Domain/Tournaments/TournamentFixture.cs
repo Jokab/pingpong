@@ -1,5 +1,5 @@
-using PingPong.Domain.Entities;
 using PingPong.Domain.MatchSubmission;
+using PingPong.Domain.Players;
 namespace PingPong.Domain.Tournaments;
 
 public sealed class TournamentFixture

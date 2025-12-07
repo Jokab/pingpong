@@ -1,4 +1,4 @@
-namespace PingPong.Application.Models;
+namespace PingPong.Application.Players;
 
 public sealed record PlayerSearchResult(
     Guid PlayerId,

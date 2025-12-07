@@ -1,4 +1,4 @@
-using PingPong.Domain.Entities;
+using PingPong.Domain.Players;
 namespace PingPong.Domain.MatchSubmission;
 
 public sealed class Match

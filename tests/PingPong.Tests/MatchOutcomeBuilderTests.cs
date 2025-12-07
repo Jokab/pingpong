@@ -1,4 +1,3 @@
-using PingPong.Domain.Entities;
 using PingPong.Domain.MatchSubmission;
 
 namespace PingPong.Tests;

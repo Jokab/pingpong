@@ -2,7 +2,6 @@ using System.Net.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using PingPong.Api.Contracts.MatchSubmission;
-using PingPong.Domain.Entities;
 using PingPong.Domain.MatchSubmission;
 using PingPong.Infrastructure.Persistence;
 using PingPong.Tests.Support;

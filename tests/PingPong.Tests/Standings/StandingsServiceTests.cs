@@ -1,11 +1,11 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using PingPong.Domain.Entities;
+using PingPong.Application.Standings;
 using PingPong.Domain.MatchSubmission;
+using PingPong.Domain.Players;
+using PingPong.Domain.Standings;
 using PingPong.Infrastructure.Persistence;
-using PingPong.Infrastructure.Services;
-
-namespace PingPong.Tests;
+namespace PingPong.Tests.Standings;
 
 public sealed class StandingsServiceTests
 {

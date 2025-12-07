@@ -1,16 +1,16 @@
 using Microsoft.EntityFrameworkCore;
-using PingPong.Application.Interfaces;
 using PingPong.Application.Models;
+using PingPong.Application.Shared;
+using PingPong.Application.Standings;
 using PingPong.Domain.MatchSubmission;
-using PingPong.Infrastructure.Persistence;
 
-namespace PingPong.Infrastructure.Services;
+namespace PingPong.Application.Standings;
 
 public sealed class StandingsService : IStandingsService
 {
-    private readonly PingPongDbContext _context;
+    private readonly IPingPongDbContext _context;
 
-    public StandingsService(PingPongDbContext context)
+    public StandingsService(IPingPongDbContext context)
     {
         _context = context;
     }

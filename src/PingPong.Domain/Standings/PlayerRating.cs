@@ -1,4 +1,5 @@
-namespace PingPong.Domain.Entities;
+using PingPong.Domain.Players;
+namespace PingPong.Domain.Standings;
 
 public sealed class PlayerRating
 {

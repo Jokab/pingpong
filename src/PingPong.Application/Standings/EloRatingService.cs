@@ -1,19 +1,19 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PingPong.Application.Interfaces;
-using PingPong.Domain.Entities;
+using PingPong.Application.Shared;
+using PingPong.Application.Standings;
 using PingPong.Domain.MatchSubmission;
-using PingPong.Infrastructure.Persistence;
+using PingPong.Domain.Standings;
 
-namespace PingPong.Infrastructure.Services;
+namespace PingPong.Application.Standings;
 
 public sealed class EloRatingService : IRatingService
 {
-    private readonly PingPongDbContext _context;
+    private readonly IPingPongDbContext _context;
     private readonly double _baseRating;
     private readonly double _kFactor;
 
-    public EloRatingService(PingPongDbContext context, IConfiguration configuration)
+    public EloRatingService(IPingPongDbContext context, IConfiguration configuration)
     {
         _context = context;
         var baseRatingStr = configuration["Ratings:BaseRating"];

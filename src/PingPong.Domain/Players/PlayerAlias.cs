@@ -1,4 +1,4 @@
-namespace PingPong.Domain.Entities;
+namespace PingPong.Domain.Players;
 
 public sealed class PlayerAlias
 {

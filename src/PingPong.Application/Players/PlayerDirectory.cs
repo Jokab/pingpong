@@ -1,16 +1,16 @@
 using Microsoft.EntityFrameworkCore;
-using PingPong.Application.Interfaces;
 using PingPong.Application.Models;
-using PingPong.Domain.Entities;
-using PingPong.Infrastructure.Persistence;
+using PingPong.Application.Players;
+using PingPong.Application.Shared;
+using PingPong.Domain.Players;
 
-namespace PingPong.Infrastructure.Services;
+namespace PingPong.Application.Players;
 
 public sealed class PlayerDirectory : IPlayerDirectory
 {
-    private readonly PingPongDbContext _context;
+    private readonly IPingPongDbContext _context;
 
-    public PlayerDirectory(PingPongDbContext context)
+    public PlayerDirectory(IPingPongDbContext context)
     {
         _context = context;
     }

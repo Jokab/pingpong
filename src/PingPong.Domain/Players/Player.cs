@@ -1,4 +1,5 @@
-namespace PingPong.Domain.Entities;
+using PingPong.Domain.Standings;
+namespace PingPong.Domain.Players;
 
 public sealed class Player
 {

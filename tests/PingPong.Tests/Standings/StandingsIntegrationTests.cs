@@ -1,11 +1,9 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using PingPong.Api.Contracts;
 using PingPong.Api.Contracts.MatchSubmission;
 using PingPong.Tests.Support;
-
-namespace PingPong.Tests;
+namespace PingPong.Tests.Standings;
 
 public sealed class StandingsIntegrationTests : IClassFixture<IntegrationTestWebApplicationFactory>
 {

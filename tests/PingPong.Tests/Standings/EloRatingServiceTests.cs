@@ -1,12 +1,11 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PingPong.Domain.Entities;
+using PingPong.Application.Standings;
 using PingPong.Domain.MatchSubmission;
+using PingPong.Domain.Players;
 using PingPong.Infrastructure.Persistence;
-using PingPong.Infrastructure.Services;
-
-namespace PingPong.Tests;
+namespace PingPong.Tests.Standings;
 
 public sealed class EloRatingServiceTests
 {
