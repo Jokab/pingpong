@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http;
 using System.Net.Http.Json;
 using PingPong.Api.Contracts;
 using PingPong.Domain.Entities;
