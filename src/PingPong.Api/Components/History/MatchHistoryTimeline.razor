@@ -6,39 +6,153 @@
         Endast tillägg av händelser. Ändringar visas som nya poster; aktuell tabell beräknas från senaste händelser per match.
     </MudText>
 
-    <MudTable T="HistoryRow" ServerData="LoadServerData" Dense="true" Hover="true" Elevation="0" RowsPerPage="25" Bordered="false">
-        <HeaderContent>
-            <MudTh>Datum</MudTh>
-            <MudTh>#</MudTh>
-            <MudTh>Match</MudTh>
-            <MudTh>Set</MudTh>
-            <MudTh>Vinnare</MudTh>
-            <MudTh>Inskickad av</MudTh>
-            <MudTh>Skapad</MudTh>
-        </HeaderContent>
-        <RowTemplate>
-            <MudTd DataLabel="Datum">@context.MatchDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)</MudTd>
-            <MudTd DataLabel="#">@context.DayOrdinal</MudTd>
-            <MudTd DataLabel="Match">@context.PlayerOneName mot @context.PlayerTwoName</MudTd>
-            <MudTd DataLabel="Set">@string.Join(", ", context.Sets.Select(s => $"{s.playerOneScore}-{s.playerTwoScore}"))</MudTd>
-            <MudTd DataLabel="Vinnare">@(string.IsNullOrWhiteSpace(context.WinnerName) ? "-" : context.WinnerName)</MudTd>
-            <MudTd DataLabel="Inskickad av">@context.SubmittedBy</MudTd>
-            <MudTd DataLabel="Skapad">@context.CreatedAt.LocalDateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)</MudTd>
-        </RowTemplate>
-    </MudTable>
+    @* Desktop: full tabell *@
+    <div class="history-desktop">
+        <MudTable T="HistoryRow"
+                  ServerData="LoadServerData"
+                  Dense="true"
+                  Hover="true"
+                  Elevation="0"
+                  RowsPerPage="25"
+                  Bordered="false">
+            <HeaderContent>
+                <MudTh>Datum</MudTh>
+                <MudTh>#</MudTh>
+                <MudTh>Match</MudTh>
+                <MudTh>Set</MudTh>
+                <MudTh>Vinnare</MudTh>
+                <MudTh>Inskickad av</MudTh>
+                <MudTh>Skapad</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Datum">@context.MatchDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)</MudTd>
+                <MudTd DataLabel="#">
+                    @(context.DayOrdinal > 1
+                        ? context.DayOrdinal.ToString(CultureInfo.InvariantCulture)
+                        : string.Empty)
+                </MudTd>
+                <MudTd DataLabel="Match">@context.PlayerOneName mot @context.PlayerTwoName</MudTd>
+                <MudTd DataLabel="Set">@string.Join(", ", context.Sets.Select(s => $"{s.playerOneScore}-{s.playerTwoScore}"))</MudTd>
+                <MudTd DataLabel="Vinnare">
+                    @if (string.IsNullOrWhiteSpace(context.WinnerName))
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">-</MudText>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Success">@context.WinnerName</MudText>
+                    }
+                </MudTd>
+                <MudTd DataLabel="Inskickad av">@context.SubmittedBy</MudTd>
+                <MudTd DataLabel="Skapad">@context.CreatedAt.LocalDateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)</MudTd>
+            </RowTemplate>
+        </MudTable>
+    </div>
+
+    @* Mobil: kompakt lista, data från samma serverpaginering *@
+    <div class="history-mobile">
+        <MudStack Spacing="1">
+            @if (_isLoading)
+            {
+                <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="py-4">
+                    <MudProgressCircular Indeterminate="true" Size="Size.Medium" />
+                </MudStack>
+            }
+            else if (_currentItems.Count == 0)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="py-2">
+                    Inga matcher i historiken ännu.
+                </MudText>
+            }
+            else
+            {
+                @foreach (var row in _currentItems)
+                {
+                    <MudPaper Elevation="0" Class="history-card py-2">
+                        <MudStack Spacing="1">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    @row.MatchDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+                                </MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    @(row.DayOrdinal > 1
+                                        ? $"#{row.DayOrdinal.ToString(CultureInfo.InvariantCulture)}"
+                                        : string.Empty)
+                                </MudText>
+                            </MudStack>
+
+                            <MudText Typo="Typo.body2" Class="font-weight-medium">
+                                @row.PlayerOneName mot @row.PlayerTwoName
+                            </MudText>
+
+                            <MudText Typo="Typo.caption">
+                                Set: @string.Join(", ", row.Sets.Select(s => $"{s.playerOneScore}-{s.playerTwoScore}"))
+                            </MudText>
+
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                <MudText Typo="Typo.caption">
+                                    <span class="history-label">Vinnare:</span>
+                                    @if (string.IsNullOrWhiteSpace(row.WinnerName))
+                                    {
+                                        <span class="history-value-muted">-</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="history-value-winner">@row.WinnerName</span>
+                                    }
+                                </MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="text-right">
+                                    Inskickad av @row.SubmittedBy
+                                </MudText>
+                            </MudStack>
+
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                Skapad: @row.CreatedAt.LocalDateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
+                            </MudText>
+                        </MudStack>
+                    </MudPaper>
+                }
+            }
+        </MudStack>
+    </div>
 </MudStack>
 
 @code {
+    private bool _isLoading;
+    private List<HistoryRow> _currentItems = [];
+
     private async Task<TableData<HistoryRow>> LoadServerData(TableState state, CancellationToken cancellationToken)
     {
-        var page = state.Page + 1;
-        var pageSize = state.PageSize <= 0 ? 25 : state.PageSize;
-        var url = $"/api/history?page={page}&pageSize={pageSize}";
+        if (_isLoading)
+        {
+            // Låt tabellen vänta in pågående hämtning; återanvänd senaste data.
+            return new TableData<HistoryRow> { TotalItems = _currentItems.Count, Items = _currentItems };
+        }
 
-        var resp = await Http.GetFromJsonAsync<PagedResponse<HistoryRow>>(url, cancellationToken);
-        if (resp is null)
-            return new TableData<HistoryRow> { TotalItems = 0, Items = [] };
-        return new TableData<HistoryRow> { TotalItems = resp.total, Items = resp.items };
+        _isLoading = true;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            var page = state.Page + 1;
+            var pageSize = state.PageSize <= 0 ? 25 : state.PageSize;
+            var url = $"/api/history?page={page}&pageSize={pageSize}";
+
+            var resp = await Http.GetFromJsonAsync<PagedResponse<HistoryRow>>(url, cancellationToken);
+            if (resp is null)
+            {
+                _currentItems = [];
+                return new TableData<HistoryRow> { TotalItems = 0, Items = [] };
+            }
+
+            _currentItems = resp.items ?? [];
+            return new TableData<HistoryRow> { TotalItems = resp.total, Items = _currentItems };
+        }
+        finally
+        {
+            _isLoading = false;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     private sealed record PagedResponse<T>(int page, int pageSize, int total, List<T> items);
